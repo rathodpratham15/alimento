@@ -32,17 +32,29 @@
     </section>
 
     <section class="glass-panel rounded-2xl p-4 sm:p-6">
-        <div class="flex items-center justify-between mb-3">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
             <h2 class="font-semibold">Inventory List</h2>
-            <button id="refreshInventoryBtn" class="btn-secondary rounded-xl px-3 py-1.5 text-sm">Refresh</button>
+            <div class="flex flex-wrap items-center gap-2">
+                <label class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 cursor-pointer select-none">
+                    <input type="checkbox" id="invSelectAll" class="rounded border-gray-300 dark:border-gray-600">
+                    <span>Select all</span>
+                </label>
+                <button type="button" id="bulkDeleteInventoryBtn" class="btn-secondary rounded-xl px-3 py-1.5 text-xs font-semibold text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/60" disabled>Delete selected</button>
+                <button id="refreshInventoryBtn" class="btn-secondary rounded-xl px-3 py-1.5 text-sm">Refresh</button>
+            </div>
         </div>
         <div id="inventoryList" class="space-y-2"></div>
     </section>
 
     <section class="glass-panel rounded-2xl p-4 sm:p-6">
-        <div class="flex items-center justify-between mb-3">
-            <h2 class="font-semibold">AI Meal Suggestions (from inventory)</h2>
-            <button id="suggestBtn" class="btn-primary rounded-xl px-3 py-1.5 text-sm">Generate</button>
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-3">
+            <div class="min-w-0">
+                <h2 class="font-semibold">AI Meal Suggestions (from inventory)</h2>
+                <p id="suggestionsMeta" class="text-xs text-gray-500 dark:text-gray-400 mt-1 min-h-[1.25rem]"></p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <button type="button" id="suggestBtn" class="btn-primary rounded-xl px-3 py-1.5 text-sm">Generate</button>
+            </div>
         </div>
         <div id="suggestions" class="space-y-2 text-sm"></div>
     </section>
@@ -69,13 +81,16 @@
         const badge = item.status === 'expiring' ? `Expiring (${item.days_to_expiry ?? '?' }d)` : (item.status === 'low_stock' ? 'Low stock' : 'OK');
         return `
             <div class="surface-solid rounded-xl p-3 flex items-start justify-between gap-3">
-                <div>
-                    <div class="font-semibold">${esc(item.name)}</div>
-                    <div class="text-xs text-gray-600 dark:text-gray-300">${esc(item.location)} | ${esc(item.category || 'uncategorized')} | Qty: ${esc(qty)} | Exp: ${esc(expiry)}</div>
-                </div>
-                <div class="flex items-center gap-2">
+                <label class="flex items-start gap-2 min-w-0 cursor-pointer select-none">
+                    <input type="checkbox" class="inv-select mt-1 rounded border-gray-300 dark:border-gray-600 flex-shrink-0" data-inv-id="${esc(item._id)}" aria-label="Select ${esc(item.name)}">
+                    <div class="min-w-0">
+                        <div class="font-semibold">${esc(item.name)}</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-300">${esc(item.location)} | ${esc(item.category || 'uncategorized')} | Qty: ${esc(qty)} | Exp: ${esc(expiry)}</div>
+                    </div>
+                </label>
+                <div class="flex items-center gap-2 flex-shrink-0">
                     <span class="text-xs px-2 py-1 rounded-full border ${statusClass(item.status)}">${esc(badge)}</span>
-                    <button class="btn-mini btn-mini-danger" onclick="deleteItem('${item._id}')">Delete</button>
+                    <button type="button" class="btn-mini btn-mini-danger" onclick="deleteItem('${esc(item._id)}')">Delete</button>
                 </div>
             </div>`;
     }
@@ -90,6 +105,41 @@
         document.getElementById('inventoryList').innerHTML = (data.items || []).map(row).join('') || '<p class="text-sm text-gray-500">No inventory items yet.</p>';
         const s = data.summary || {};
         document.getElementById('inventorySummary').textContent = `Items: ${s.count || 0} | Low stock: ${s.low_stock || 0} | Expiring: ${s.expiring || 0}`;
+        syncInvBulkUI();
+    }
+
+    function syncInvBulkUI() {
+        const list = document.getElementById('inventoryList');
+        const checks = list.querySelectorAll('.inv-select');
+        const n = list.querySelectorAll('.inv-select:checked').length;
+        const btn = document.getElementById('bulkDeleteInventoryBtn');
+        const sa = document.getElementById('invSelectAll');
+        if (btn) btn.disabled = n === 0;
+        if (sa && checks.length) {
+            sa.checked = n === checks.length && n > 0;
+            sa.indeterminate = n > 0 && n < checks.length;
+        } else if (sa) {
+            sa.checked = false;
+            sa.indeterminate = false;
+        }
+    }
+
+    async function bulkDeleteInventory() {
+        const ids = Array.from(document.querySelectorAll('.inv-select:checked')).map((cb) => cb.getAttribute('data-inv-id')).filter(Boolean);
+        if (!ids.length) return;
+        if (!confirm(`Delete ${ids.length} item${ids.length === 1 ? '' : 's'}?`)) return;
+        const res = await fetch('/api/v3/inventory/bulk-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!data.success) {
+            setStatus(data.message || data.error || 'Could not delete items.', false);
+            return;
+        }
+        setStatus(`Deleted ${data.deleted || 0} item(s).`, true);
+        loadInventory();
     }
 
     async function addItem() {
@@ -126,32 +176,93 @@
         loadInventory();
     }
 
-    async function suggestMeals() {
-        const container = document.getElementById('suggestions');
-        container.innerHTML = '';
-        const res = await fetch('/api/v3/inventory/suggestions', { method: 'POST' });
-        const data = await res.json();
-        if (!data.success) {
-            container.innerHTML = `<p class="text-sm text-red-600">${esc(data.message || data.error || 'Could not generate suggestions.')}</p>`;
+    function setSuggestionsMeta(msg, tone) {
+        const el = document.getElementById('suggestionsMeta');
+        if (!msg) {
+            el.textContent = '';
+            el.className = 'text-xs text-gray-500 dark:text-gray-400 mt-1 min-h-[1.25rem]';
             return;
         }
-        const meals = data.meals || [];
-        container.innerHTML = meals.map(m => `
+        let cls = 'text-gray-600 dark:text-gray-300';
+        if (tone === 'ok') cls = 'text-green-600 dark:text-green-400';
+        if (tone === 'err') cls = 'text-red-600 dark:text-red-400';
+        el.className = `text-xs mt-1 min-h-[1.25rem] ${cls}`;
+        el.textContent = msg;
+    }
+
+    function renderSuggestions(meals) {
+        const container = document.getElementById('suggestions');
+        const list = Array.isArray(meals) ? meals : [];
+        container.innerHTML = list.map(m => `
             <div class="surface-solid rounded-xl p-3">
                 <div class="font-semibold">${esc(m.name)}</div>
                 <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">${esc(m.why || '')}</p>
                 <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">Uses: ${esc((m.uses || []).join(', '))}</p>
                 <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">${esc(m.nutrition_note || '')}</p>
             </div>
-        `).join('') || '<p class="text-sm text-gray-500">No suggestions returned.</p>';
+        `).join('') || '<p class="text-sm text-gray-500">No suggestions to show.</p>';
+    }
+
+    async function loadSavedSuggestions() {
+        try {
+            const res = await fetch('/api/v3/inventory/suggestions/saved');
+            const data = await res.json();
+            if (!data.success) return;
+            const meals = data.meals || [];
+            if (!meals.length) {
+                setSuggestionsMeta('');
+                return;
+            }
+            renderSuggestions(meals);
+            const when = data.updated_at ? new Date(data.updated_at).toLocaleString() : '';
+            setSuggestionsMeta(when ? `Showing saved suggestions (${when}).` : 'Showing saved suggestions.', 'info');
+        } catch (e) {
+            /* ignore */
+        }
+    }
+
+    async function suggestMeals() {
+        const container = document.getElementById('suggestions');
+        container.innerHTML = '';
+        setSuggestionsMeta('');
+        const res = await fetch('/api/v3/inventory/suggestions', { method: 'POST' });
+        let data = {};
+        try {
+            data = await res.json();
+        } catch (e) {
+            container.innerHTML = `<p class="text-sm text-red-600">Could not read server response (${res.status}).</p>`;
+            return;
+        }
+        if (!data.success) {
+            container.innerHTML = `<p class="text-sm text-red-600">${esc(data.message || data.error || 'Could not generate suggestions.')}</p>`;
+            return;
+        }
+        const meals = data.meals || [];
+        renderSuggestions(meals);
+        if (data.saved) {
+            setSuggestionsMeta('Saved to your account automatically. Open Inventory anytime to see this list.', 'ok');
+        } else {
+            setSuggestionsMeta('Nothing valid to save — try generating again.', 'err');
+        }
     }
 
     const addItemBtn = document.getElementById('addItemBtn');
     const refreshInventoryBtn = document.getElementById('refreshInventoryBtn');
     const suggestBtn = document.getElementById('suggestBtn');
+    const invSelectAll = document.getElementById('invSelectAll');
+    const bulkDeleteInventoryBtn = document.getElementById('bulkDeleteInventoryBtn');
     addItemBtn.addEventListener('click', () => withCtaLoading(addItemBtn, addItem, { label: 'Adding…' }));
     refreshInventoryBtn.addEventListener('click', () => withCtaLoading(refreshInventoryBtn, loadInventory, { label: 'Refreshing…' }));
     suggestBtn.addEventListener('click', () => withCtaLoading(suggestBtn, suggestMeals, { label: 'Generating…' }));
+    invSelectAll.addEventListener('change', (e) => {
+        document.querySelectorAll('.inv-select').forEach((cb) => { cb.checked = e.target.checked; });
+        syncInvBulkUI();
+    });
+    document.getElementById('inventoryList').addEventListener('change', (e) => {
+        if (e.target.classList && e.target.classList.contains('inv-select')) syncInvBulkUI();
+    });
+    bulkDeleteInventoryBtn.addEventListener('click', () => withCtaLoading(bulkDeleteInventoryBtn, bulkDeleteInventory, { label: 'Deleting…' }));
     loadInventory();
+    loadSavedSuggestions();
 </script>
 {% endblock %}

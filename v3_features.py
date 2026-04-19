@@ -9,6 +9,7 @@ import re
 import random
 import time
 import uuid
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 import requests
@@ -37,9 +38,15 @@ if GEMINI_API_KEY:
 
 
 def _gemini_generate(content, max_output_tokens=4096, temperature=0.2, max_retries=4):
-    """Call Gemini with retries for transient failures (rate limits, 5xx, empty text)."""
+    """Call Gemini with retries for transient failures (rate limits, 5xx, empty text).
+
+    Returns:
+        ``(response, None)`` on success with non-empty model text.
+        ``(None, "rate_limit")`` when quota / per-minute limits are exceeded after retries.
+        ``(None, "generation_failed")`` for other failures or empty/blocked responses.
+    """
     if not _v3_model:
-        return None
+        return None, "generation_failed"
 
     retryable_types = (
         google_api_exceptions.ResourceExhausted,
@@ -57,7 +64,7 @@ def _gemini_generate(content, max_output_tokens=4096, temperature=0.2, max_retri
             except Exception:
                 text = ""
             if text:
-                return resp
+                return resp, None
             last_issue = "empty_or_blocked_response"
         except retryable_types as exc:
             last_issue = exc
@@ -69,7 +76,9 @@ def _gemini_generate(content, max_output_tokens=4096, temperature=0.2, max_retri
             time.sleep(delay)
 
     print(f"[Gemini] generate_content failed after {max_retries} attempt(s): {last_issue!r}")
-    return None
+    if isinstance(last_issue, google_api_exceptions.ResourceExhausted):
+        return None, "rate_limit"
+    return None, "generation_failed"
 
 
 def _is_authed():
@@ -216,12 +225,39 @@ def _image_from_request(file_storage=None, image_url=None):
             img = img.convert("RGB")
         return img
     if image_url:
-        resp = requests.get(image_url, timeout=15)
-        resp.raise_for_status()
-        img = Image.open(BytesIO(resp.content))
-        if img.mode not in ["RGB", "L"]:
-            img = img.convert("RGB")
-        return img
+        clean_url = str(image_url).strip()
+        if not clean_url:
+            return None
+        parsed = urlsplit(clean_url)
+        origin = f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else None
+        base_headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/123.0.0.0 Safari/537.36"
+            ),
+            "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+        attempts = [dict(base_headers)]
+        if origin:
+            hdr = dict(base_headers)
+            hdr["Referer"] = origin + "/"
+            attempts.append(hdr)
+
+        last_exc = None
+        for headers in attempts:
+            try:
+                resp = requests.get(clean_url, timeout=20, headers=headers)
+                resp.raise_for_status()
+                img = Image.open(BytesIO(resp.content))
+                if img.mode not in ["RGB", "L"]:
+                    img = img.convert("RGB")
+                return img
+            except Exception as exc:
+                last_exc = exc
+        if last_exc:
+            raise last_exc
     return None
 
 
@@ -325,7 +361,7 @@ diet_type={ctx.get('diet_type', 'standard_american')}, allergies={ctx.get('aller
 
 Meal text: {meal_text}
 """
-    res = _gemini_generate(prompt)
+    res, _ = _gemini_generate(prompt)
     parsed = _parse_json_from_text(getattr(res, "text", "") if res else "")
     if not parsed:
         return None
@@ -360,7 +396,7 @@ Keys: meal_name, calories_kcal, protein_g, carbs_g, fat_g, fiber_g, sodium_mg, n
 Use concise values and realistic estimates.
 Diet context: {ctx.get('diet_type', 'standard_american')}
 """
-    res = _gemini_generate([prompt, img])
+    res, _ = _gemini_generate([prompt, img])
     parsed = _parse_json_from_text(getattr(res, "text", "") if res else "")
     if not parsed:
         return None
@@ -817,7 +853,7 @@ Recipe pool:
 {json.dumps(recipe_pool)}
 """
 
-    res = _gemini_generate(prompt)
+    res, _ = _gemini_generate(prompt)
     raw_text = getattr(res, "text", "") if res else ""
     print(f"[PLANNER DEBUG] gemini response length: {len(raw_text)}, first 200 chars: {raw_text[:200]!r}")
     parsed = _parse_json_from_text(raw_text)
@@ -1665,6 +1701,27 @@ def v3_recipes():
         ), 409
 
 
+@v3_bp.route("/api/v3/recipes/bulk-delete", methods=["POST"])
+def v3_recipes_bulk_delete():
+    user_id, err = _auth_guard()
+    if err:
+        return err
+    body = request.get_json(silent=True) or {}
+    raw_ids = body.get("ids")
+    if not isinstance(raw_ids, list) or not raw_ids:
+        return jsonify({"success": False, "error": "ids_required"}), 400
+    oids = []
+    for rid in raw_ids[:500]:
+        try:
+            oids.append(ObjectId(str(rid)))
+        except Exception:
+            continue
+    if not oids:
+        return jsonify({"success": False, "error": "no_valid_ids"}), 400
+    result = db.recipes.delete_many({"user_id": user_id, "_id": {"$in": oids}})
+    return jsonify({"success": True, "deleted": result.deleted_count})
+
+
 @v3_bp.route("/api/v3/recipes/<recipe_id>", methods=["PUT", "DELETE"])
 def v3_recipe_detail(recipe_id):
     user_id, err = _auth_guard()
@@ -1783,6 +1840,27 @@ def v3_inventory():
     return jsonify({"success": True, "item": row})
 
 
+@v3_bp.route("/api/v3/inventory/bulk-delete", methods=["POST"])
+def v3_inventory_bulk_delete():
+    user_id, err = _auth_guard()
+    if err:
+        return err
+    body = request.get_json(silent=True) or {}
+    raw_ids = body.get("ids")
+    if not isinstance(raw_ids, list) or not raw_ids:
+        return jsonify({"success": False, "error": "ids_required"}), 400
+    oids = []
+    for rid in raw_ids[:500]:
+        try:
+            oids.append(ObjectId(str(rid)))
+        except Exception:
+            continue
+    if not oids:
+        return jsonify({"success": False, "error": "no_valid_ids"}), 400
+    result = db.inventory_items.delete_many({"user_id": user_id, "_id": {"$in": oids}})
+    return jsonify({"success": True, "deleted": result.deleted_count})
+
+
 @v3_bp.route("/api/v3/inventory/<item_id>", methods=["PUT", "DELETE"])
 def v3_inventory_item(item_id):
     user_id, err = _auth_guard()
@@ -1842,6 +1920,49 @@ def v3_inventory_item(item_id):
     return jsonify({"success": True, "item": row})
 
 
+def _sanitize_inventory_saved_meals(raw):
+    """Normalize AI meal suggestion payloads for storage (bounded size)."""
+    if not isinstance(raw, list):
+        return []
+    out = []
+    for m in raw[:25]:
+        if not isinstance(m, dict):
+            continue
+        name = str(m.get("name") or "").strip()[:200]
+        if not name:
+            continue
+        uses = m.get("uses")
+        if not isinstance(uses, list):
+            uses = []
+        uses = [str(u).strip()[:200] for u in uses[:40] if str(u).strip()]
+        out.append(
+            {
+                "name": name,
+                "why": str(m.get("why") or "")[:4000],
+                "uses": uses,
+                "nutrition_note": str(m.get("nutrition_note") or "")[:4000],
+            }
+        )
+    return out
+
+
+@v3_bp.route("/api/v3/inventory/suggestions/saved", methods=["GET"])
+def v3_inventory_suggestions_saved():
+    user_id, err = _auth_guard()
+    if err:
+        return err
+    coll = db.inventory_meal_suggestions
+    doc = coll.find_one({"user_id": user_id})
+    if not doc:
+        return jsonify({"success": True, "meals": [], "updated_at": None})
+    meals = doc.get("meals") or []
+    if not isinstance(meals, list):
+        meals = []
+    updated = doc.get("updated_at")
+    updated_iso = updated.isoformat() if isinstance(updated, datetime) else None
+    return jsonify({"success": True, "meals": meals, "updated_at": updated_iso})
+
+
 @v3_bp.route("/api/v3/inventory/suggestions", methods=["POST"])
 def v3_inventory_suggestions():
     user_id, err = _auth_guard()
@@ -1876,15 +1997,42 @@ def v3_inventory_suggestions():
         "Return strict JSON: {\"meals\":[{\"name\":\"...\",\"why\":\"...\",\"uses\":[\"...\"],\"nutrition_note\":\"...\"}]}\n"
         f"User context: {json.dumps(ctx)}\nInventory: {json.dumps(inv)}"
     )
-    text = _gemini_generate(prompt)
-    if not text:
+    resp, gem_err = _gemini_generate(prompt)
+    raw_text = (getattr(resp, "text", "") or "").strip() if resp else ""
+    if not raw_text:
+        if gem_err == "rate_limit":
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "ai_rate_limited",
+                        "message": (
+                            "Gemini free-tier or per-minute request limit was reached. "
+                            "Wait about one minute and try again, or check quota and billing at "
+                            "https://ai.google.dev/gemini-api/docs/rate-limits"
+                        ),
+                    }
+                ),
+                429,
+            )
         return jsonify({"success": False, "error": "ai_generation_failed"}), 502
-    try:
-        data = json.loads(text)
-        meals = data.get("meals", [])
-        return jsonify({"success": True, "meals": meals})
-    except json.JSONDecodeError:
+    data = _parse_json_from_text(raw_text)
+    if not isinstance(data, dict):
         return jsonify({"success": False, "error": "ai_parse_error"}), 502
+    meals = data.get("meals", [])
+    if not isinstance(meals, list):
+        meals = []
+    cleaned = _sanitize_inventory_saved_meals(meals)
+    saved = False
+    if cleaned:
+        now = datetime.now(timezone.utc)
+        db.inventory_meal_suggestions.update_one(
+            {"user_id": user_id},
+            {"$set": {"user_id": user_id, "meals": cleaned, "updated_at": now}, "$setOnInsert": {"created_at": now}},
+            upsert=True,
+        )
+        saved = True
+    return jsonify({"success": True, "meals": cleaned, "saved": saved})
 
 
 @v3_bp.route("/api/v3/planner/week", methods=["GET", "POST"])
@@ -2492,9 +2640,23 @@ def v3_coach_chat():
         f"Recent conversation: {json.dumps(prior_messages)}\n"
         f"User question: {message}"
     )
-    resp = _gemini_generate(prompt)
+    resp, gem_err = _gemini_generate(prompt)
     reply = (getattr(resp, "text", "") or "").strip() if resp else ""
     if not reply:
+        if gem_err == "rate_limit":
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "ai_rate_limited",
+                        "message": (
+                            "Gemini quota or per-minute limit reached. Wait briefly and try again. "
+                            "See https://ai.google.dev/gemini-api/docs/rate-limits"
+                        ),
+                    }
+                ),
+                429,
+            )
         return jsonify({"success": False, "error": "ai_generation_failed", "message": "Gemini could not produce a coach response."}), 502
 
     messages = _append_coach_exchange(session_doc, message, reply)

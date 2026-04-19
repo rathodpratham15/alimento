@@ -41,9 +41,16 @@
         </div>
 
         <div class="lg:col-span-2 glass-panel rounded-2xl p-4 sm:p-6">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
                 <h2 class="text-lg font-bold">My + Public Recipes</h2>
-                <button id="refreshRecipes" class="btn-secondary px-3 py-2 rounded-xl text-sm">Refresh</button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <label class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 cursor-pointer select-none">
+                        <input type="checkbox" id="recipeSelectAllMine" class="rounded border-gray-300 dark:border-gray-600">
+                        <span>Select my recipes</span>
+                    </label>
+                    <button type="button" id="bulkDeleteRecipesBtn" class="btn-secondary px-3 py-2 rounded-xl text-xs font-semibold text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/60" disabled>Delete selected</button>
+                    <button id="refreshRecipes" class="btn-secondary px-3 py-2 rounded-xl text-sm">Refresh</button>
+                </div>
             </div>
             <div id="recipeGrid" class="recipe-grid grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4"></div>
         </div>
@@ -53,6 +60,8 @@
 
 {% block scripts %}
 <script>
+    const RECIPE_OWNER_ID = '{{ current_user.id if current_user.is_authenticated else "" }}';
+
     function escapeHtml(value) {
         return String(value ?? '')
             .replace(/&/g, '&amp;')
@@ -74,18 +83,26 @@
         const extraTags = (recipe.diet_tags || []).length > 4 ? `<span class="recipe-chip">+${(recipe.diet_tags || []).length - 4}</span>` : '';
         const ingredients = (recipe.ingredients || []).slice(0, 4).map(i => `<span class="recipe-ingredient">${escapeHtml(i)}</span>`).join('');
         const extraIngredients = (recipe.ingredients || []).length > 4 ? `<span class="recipe-ingredient">+${(recipe.ingredients || []).length - 4} more</span>` : '';
-        const ownerBadge = recipe.user_id === '{{ current_user.id if current_user.is_authenticated else "" }}'
+        const isMine = recipe.user_id === RECIPE_OWNER_ID;
+        const ownerBadge = isMine
             ? '<span class="recipe-origin-badge mine"><i class="ph ph-user"></i> Mine</span>'
             : '<span class="recipe-origin-badge public"><i class="ph ph-globe-hemisphere-west"></i> Public</span>';
+        const rid = escapeHtml(recipe._id || '');
+        const selectMine = isMine
+            ? `<input type="checkbox" class="recipe-select mt-1 rounded border-gray-300 dark:border-gray-600 flex-shrink-0" data-recipe-id="${rid}" title="Select for bulk delete" aria-label="Select recipe">`
+            : '';
 
         return `
             <div class="recipe-card rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-white/50 dark:bg-black/20 h-full flex flex-col">
                 <div class="flex items-start justify-between gap-2">
-                    <div class="min-w-0">
-                        <h3 class="font-bold text-gray-900 dark:text-white text-lg leading-tight truncate">${escapeHtml(recipe.name || 'Untitled')}</h3>
-                        <div class="mt-1">${ownerBadge}</div>
+                    <div class="flex items-start gap-2 min-w-0 flex-1">
+                        ${selectMine}
+                        <div class="min-w-0">
+                            <h3 class="font-bold text-gray-900 dark:text-white text-lg leading-tight truncate">${escapeHtml(recipe.name || 'Untitled')}</h3>
+                            <div class="mt-1">${ownerBadge}</div>
+                        </div>
                     </div>
-                    ${recipe.user_id === '{{ current_user.id if current_user.is_authenticated else "" }}' ? `<button onclick="deleteRecipe('${recipe._id}')" class="btn-mini btn-mini-danger recipe-delete-btn" title="Delete recipe"><i class='ph ph-trash'></i></button>` : ''}
+                    ${isMine ? `<button type="button" onclick="deleteRecipe('${rid}')" class="btn-mini btn-mini-danger recipe-delete-btn" title="Delete recipe"><i class='ph ph-trash'></i></button>` : ''}
                 </div>
                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 recipe-desc">${escapeHtml(recipe.description || '')}</p>
 
@@ -125,6 +142,40 @@
         }
     }
 
+    function syncRecipeBulkUI() {
+        const grid = document.getElementById('recipeGrid');
+        const checks = grid.querySelectorAll('.recipe-select');
+        const n = grid.querySelectorAll('.recipe-select:checked').length;
+        const btn = document.getElementById('bulkDeleteRecipesBtn');
+        const sa = document.getElementById('recipeSelectAllMine');
+        if (btn) btn.disabled = n === 0;
+        if (sa && checks.length) {
+            sa.checked = n === checks.length && n > 0;
+            sa.indeterminate = n > 0 && n < checks.length;
+        } else if (sa) {
+            sa.checked = false;
+            sa.indeterminate = false;
+        }
+    }
+
+    async function bulkDeleteRecipes() {
+        const ids = Array.from(document.querySelectorAll('.recipe-select:checked')).map((cb) => cb.getAttribute('data-recipe-id')).filter(Boolean);
+        if (!ids.length) return;
+        if (!confirm(`Permanently delete ${ids.length} recipe${ids.length === 1 ? '' : 's'}?`)) return;
+        const res = await fetch('/api/v3/recipes/bulk-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!data.success) {
+            setRecipeStatus(data.message || data.error || 'Bulk delete failed.', false);
+            return;
+        }
+        setRecipeStatus(`Deleted ${data.deleted || 0} recipe(s).`, true);
+        loadRecipes();
+    }
+
     async function loadRecipes() {
         const res = await fetch('/api/v3/recipes?include_public=1');
         const data = await res.json();
@@ -132,9 +183,11 @@
         const grid = document.getElementById('recipeGrid');
         if (!data.recipes.length) {
             grid.innerHTML = '<p class="text-sm text-gray-500">No recipes yet.</p>';
+            syncRecipeBulkUI();
             return;
         }
         grid.innerHTML = data.recipes.map(recipeCard).join('');
+        syncRecipeBulkUI();
     }
 
     async function addRecipe() {
@@ -178,8 +231,18 @@
     document.addEventListener('DOMContentLoaded', () => {
         const addRecipeBtn = document.getElementById('addRecipe');
         const refreshRecipesBtn = document.getElementById('refreshRecipes');
+        const bulkDeleteRecipesBtn = document.getElementById('bulkDeleteRecipesBtn');
+        const recipeSelectAllMine = document.getElementById('recipeSelectAllMine');
         addRecipeBtn.addEventListener('click', () => withCtaLoading(addRecipeBtn, addRecipe, { label: 'Saving…' }));
         refreshRecipesBtn.addEventListener('click', () => withCtaLoading(refreshRecipesBtn, loadRecipes, { label: 'Refreshing…' }));
+        bulkDeleteRecipesBtn.addEventListener('click', () => withCtaLoading(bulkDeleteRecipesBtn, bulkDeleteRecipes, { label: 'Deleting…' }));
+        recipeSelectAllMine.addEventListener('change', (e) => {
+            document.querySelectorAll('.recipe-select').forEach((cb) => { cb.checked = e.target.checked; });
+            syncRecipeBulkUI();
+        });
+        document.getElementById('recipeGrid').addEventListener('change', (e) => {
+            if (e.target.classList && e.target.classList.contains('recipe-select')) syncRecipeBulkUI();
+        });
         loadContextBanner();
         loadRecipes();
     });

@@ -24,7 +24,7 @@ class MongoDBManager:
 
     * ``collection`` – legacy ``analysis_history``
     * ``users``, ``logins``, ``usage``, ``share_links``, ``hydration_logs``
-    * ``meal_logs``, ``food_items``, ``inventory_items``, ``barcode_cache``
+    * ``meal_logs``, ``food_items``, ``inventory_items``, ``inventory_meal_suggestions``, ``barcode_cache``
     * ``recipes``, ``meal_plans``, ``grocery_lists``, ``weight_logs``
     * ``chat_sessions``, ``challenges``, ``challenge_members``
     * ``activity_integrations``, ``notification_settings``, ``migration_state``
@@ -81,6 +81,7 @@ class MongoDBManager:
             self.meal_logs = self.db.meal_logs
             self.food_items = self.db.food_items
             self.inventory_items = self.db.inventory_items
+            self.inventory_meal_suggestions = self.db.inventory_meal_suggestions
             self.barcode_cache = self.db.barcode_cache
             self.recipes = self.db.recipes
             self.meal_plans = self.db.meal_plans
@@ -175,6 +176,8 @@ class MongoDBManager:
             self.inventory_items.create_index([('user_id', ASCENDING), ('name', ASCENDING)])
             self.inventory_items.create_index([('user_id', ASCENDING), ('expires_at', ASCENDING)])
             self.inventory_items.create_index([('user_id', ASCENDING), ('updated_at', DESCENDING)])
+
+            self.inventory_meal_suggestions.create_index([('user_id', ASCENDING)], unique=True)
 
             self.barcode_cache.create_index([('barcode', ASCENDING)], unique=True)
             self.barcode_cache.create_index([('updated_at', DESCENDING)])

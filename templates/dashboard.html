@@ -162,11 +162,20 @@
 
     <!-- Timeline (Left 2/3) -->
     <div class="lg:col-span-2 space-y-6">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 id="mealsHeading" class="text-xl font-bold text-gray-900 dark:text-white font-serif-accent">Today's Meals</h2>
-        <a href="/history" class="text-sm font-medium text-purple-600 hover:text-purple-700 flex items-center gap-1">
-          <span class="hidden sm:inline">View History</span> <i class="ph ph-arrow-right"></i>
-        </a>
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div id="mealsBulkBar" class="hidden items-center gap-2">
+            <label class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 cursor-pointer select-none">
+              <input type="checkbox" id="mealsSelectAll" class="rounded border-gray-300 dark:border-gray-600">
+              <span>Select all</span>
+            </label>
+            <button type="button" id="bulkDeleteMealsBtn" class="btn-secondary px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/60" disabled>Delete selected</button>
+          </div>
+          <a href="/history" class="text-sm font-medium text-purple-600 hover:text-purple-700 flex items-center gap-1">
+            <span class="hidden sm:inline">View History</span> <i class="ph ph-arrow-right"></i>
+          </a>
+        </div>
       </div>
 
       <div id="mealsList" class="space-y-4">
@@ -396,6 +405,12 @@
       const mealsHeading = document.getElementById('mealsHeading');
       mealsHeading.textContent = data.is_today ? "Today's Meals" : `Meals on ${prettyDate(data.selected_date)}`;
 
+      const bulkBar = document.getElementById('mealsBulkBar');
+      if (bulkBar) {
+        bulkBar.classList.add('hidden');
+        bulkBar.classList.remove('flex');
+      }
+
       if (!data.meals || data.meals.length === 0) {
         window.__dashboardMealsCache = [];
         mealsEl.innerHTML = `
@@ -408,6 +423,18 @@
           </div>
         `;
         return;
+      }
+
+      if (bulkBar) {
+        bulkBar.classList.remove('hidden');
+        bulkBar.classList.add('flex');
+        const sa = document.getElementById('mealsSelectAll');
+        if (sa) {
+          sa.checked = false;
+          sa.indeterminate = false;
+        }
+        const bdb = document.getElementById('bulkDeleteMealsBtn');
+        if (bdb) bdb.disabled = true;
       }
 
       mealsEl.innerHTML = data.meals.map(m => {
@@ -443,6 +470,7 @@
 
         return `
           <div class="glass-panel rounded-xl p-2.5 sm:p-3 flex items-center gap-2 sm:gap-4 sm:hover:shadow-md transition-all">
+            <input type="checkbox" class="meal-select-check rounded border-gray-300 dark:border-gray-600 flex-shrink-0 self-center" data-meal-id="${mid}" data-meal-source-kind="${escapeHtmlAttr(sourceKind)}" title="Select for bulk delete" aria-label="Select meal">
             <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0">${imgHtml}</div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between gap-2 mb-1">
@@ -461,6 +489,25 @@
           </div>
         `;
       }).join('');
+      syncMealsBulkUI();
+    }
+
+    function syncMealsBulkUI() {
+      const list = document.getElementById('mealsList');
+      const bulkBar = document.getElementById('mealsBulkBar');
+      const btn = document.getElementById('bulkDeleteMealsBtn');
+      const sa = document.getElementById('mealsSelectAll');
+      if (!list || !bulkBar || !btn || !sa) return;
+      const checks = list.querySelectorAll('.meal-select-check');
+      if (!checks.length) {
+        bulkBar.classList.add('hidden');
+        bulkBar.classList.remove('flex');
+        return;
+      }
+      const n = list.querySelectorAll('.meal-select-check:checked').length;
+      btn.disabled = n === 0;
+      sa.checked = n === checks.length && n > 0;
+      sa.indeterminate = n > 0 && n < checks.length;
     }
 
     function renderDashboard(data) {
@@ -611,6 +658,11 @@
       } catch (err) {
         console.warn(err);
         document.getElementById('dayProgress').textContent = 'Please sign in to view dashboard.';
+        const bb = document.getElementById('mealsBulkBar');
+        if (bb) {
+          bb.classList.add('hidden');
+          bb.classList.remove('flex');
+        }
         document.getElementById('mealsList').innerHTML = `
           <div class="glass-panel p-8 text-center rounded-2xl">
              <p class="text-gray-500 mb-4">Sign in to track your meals.</p>
@@ -621,6 +673,43 @@
     }
 
     if (quickMealBtn) quickMealBtn.addEventListener('click', () => openLogMealModal());
+
+    document.getElementById('mealsSelectAll')?.addEventListener('change', (e) => {
+      const on = e.target.checked;
+      document.querySelectorAll('#mealsList .meal-select-check').forEach((cb) => {
+        cb.checked = on;
+      });
+      syncMealsBulkUI();
+    });
+
+    document.getElementById('mealsList').addEventListener('change', (e) => {
+      if (e.target.classList && e.target.classList.contains('meal-select-check')) {
+        syncMealsBulkUI();
+      }
+    });
+
+    document.getElementById('bulkDeleteMealsBtn')?.addEventListener('click', async () => {
+      const boxes = Array.from(document.querySelectorAll('#mealsList .meal-select-check:checked'));
+      if (!boxes.length) return;
+      if (!confirm(`Remove ${boxes.length} meal${boxes.length === 1 ? '' : 's'} from this day?`)) return;
+      try {
+        const tasks = boxes.map((cb) => {
+          const id = cb.getAttribute('data-meal-id');
+          const kind = cb.getAttribute('data-meal-source-kind');
+          if (kind === 'v3') {
+            return fetch(`/api/v3/meals/${encodeURIComponent(id)}`, { method: 'DELETE' }).then((r) => r.json());
+          }
+          return fetch(`/delete-analysis/${encodeURIComponent(id)}`, { method: 'POST' }).then((r) => r.json());
+        });
+        const results = await Promise.all(tasks);
+        if (results.some((r) => !r || !r.success)) {
+          alert('Some meals could not be removed. Refresh and try again.');
+        }
+        await loadDay();
+      } catch (err) {
+        alert(err.message || 'Bulk delete failed.');
+      }
+    });
 
     document.getElementById('mealsList').addEventListener('click', async (e) => {
       const editBtn = e.target.closest('[data-meal-edit]');
