@@ -70,6 +70,10 @@
 
                 <div id="tab-barcode" class="log-pane hidden space-y-3">
                     <input id="barcodeInput" class="input-glass w-full rounded-xl px-3 py-2 text-sm" placeholder="Enter barcode">
+                    <button type="button" id="scanBarcodeBtn" class="btn-secondary w-full py-2 rounded-lg text-sm font-semibold inline-flex items-center justify-center gap-2">
+                        <i class="ph ph-camera"></i>
+                        <span>Scan Barcode</span>
+                    </button>
                     <input id="barcodeServings" type="number" step="0.1" value="1" class="input-glass w-full rounded-xl px-3 py-2 text-sm" placeholder="Servings">
                     <button type="button" id="logBarcodeMealBtn" onclick="submitBarcodeLog(this)" class="btn-primary w-full py-2 rounded-lg text-sm font-semibold">Log Barcode Meal</button>
                 </div>
@@ -136,6 +140,24 @@
                 </div>
                 <div id="groceryContainer" class="space-y-2 text-sm text-gray-700 dark:text-gray-300 max-h-80 overflow-auto pr-1"></div>
             </div>
+        </div>
+    </div>
+</div>
+
+<div id="barcodeScannerModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-[1200] p-4">
+    <div class="w-full max-w-lg rounded-2xl bg-gray-950 border border-white/10 shadow-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <h3 class="text-base font-semibold text-white">Scan Barcode</h3>
+            <button type="button" id="closeBarcodeScannerBtn" class="icon-btn h-8 w-8 text-white/80 hover:text-white" aria-label="Close scanner">
+                <i class="ph ph-x"></i>
+            </button>
+        </div>
+        <div class="p-4 space-y-3">
+            <div class="rounded-xl overflow-hidden border border-white/10 bg-black">
+                <video id="barcodeScannerVideo" class="w-full h-64 object-cover" autoplay playsinline muted></video>
+            </div>
+            <p id="barcodeScannerStatus" class="text-xs text-gray-300">Align the barcode inside the camera frame.</p>
+            <button type="button" id="cancelBarcodeScannerBtn" class="btn-secondary w-full py-2 rounded-lg text-sm font-semibold">Cancel</button>
         </div>
     </div>
 </div>
@@ -571,6 +593,117 @@
         }, { label: 'Logging…' });
     }
 
+    const barcodeScannerState = {
+        stream: null,
+        detector: null,
+        active: false,
+        rafId: null,
+        busy: false,
+    };
+
+    function updateScannerStatus(message, ok = true) {
+        const el = document.getElementById('barcodeScannerStatus');
+        if (!el) return;
+        el.textContent = message;
+        el.className = `text-xs ${ok ? 'text-gray-300' : 'text-red-300'}`;
+    }
+
+    function stopBarcodeScanner() {
+        barcodeScannerState.active = false;
+        barcodeScannerState.busy = false;
+        if (barcodeScannerState.rafId) {
+            cancelAnimationFrame(barcodeScannerState.rafId);
+            barcodeScannerState.rafId = null;
+        }
+        if (barcodeScannerState.stream) {
+            barcodeScannerState.stream.getTracks().forEach(track => track.stop());
+            barcodeScannerState.stream = null;
+        }
+        const video = document.getElementById('barcodeScannerVideo');
+        if (video) video.srcObject = null;
+        const modal = document.getElementById('barcodeScannerModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
+    async function scanBarcodeFrame() {
+        if (!barcodeScannerState.active) return;
+        if (barcodeScannerState.busy) {
+            barcodeScannerState.rafId = requestAnimationFrame(scanBarcodeFrame);
+            return;
+        }
+
+        const video = document.getElementById('barcodeScannerVideo');
+        if (!video || video.readyState < 2) {
+            barcodeScannerState.rafId = requestAnimationFrame(scanBarcodeFrame);
+            return;
+        }
+
+        try {
+            barcodeScannerState.busy = true;
+            const detected = await barcodeScannerState.detector.detect(video);
+            const match = Array.isArray(detected)
+                ? detected.find(code => code && code.rawValue)
+                : null;
+            if (match && match.rawValue) {
+                const raw = String(match.rawValue).trim();
+                const normalized = raw.replace(/\D/g, '') || raw;
+                document.getElementById('barcodeInput').value = normalized;
+                showLogStatus(`Scanned barcode: ${normalized}`, true);
+                stopBarcodeScanner();
+                return;
+            }
+        } catch (_) {
+            // Keep scanning until barcode is detected or user cancels.
+        } finally {
+            barcodeScannerState.busy = false;
+        }
+
+        barcodeScannerState.rafId = requestAnimationFrame(scanBarcodeFrame);
+    }
+
+    async function openBarcodeScanner() {
+        if (!('BarcodeDetector' in window) || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showLogStatus('Barcode scanning is not supported in this browser. Please enter the barcode manually.', false);
+            return;
+        }
+
+        const modal = document.getElementById('barcodeScannerModal');
+        const video = document.getElementById('barcodeScannerVideo');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        updateScannerStatus('Starting camera...');
+
+        try {
+            barcodeScannerState.detector = new BarcodeDetector({
+                formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf'],
+            });
+        } catch (_) {
+            try {
+                barcodeScannerState.detector = new BarcodeDetector();
+            } catch (_e) {
+                updateScannerStatus('Barcode scanner could not be initialized on this device.', false);
+                return;
+            }
+        }
+
+        try {
+            barcodeScannerState.stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: 'environment' } },
+                audio: false,
+            });
+            video.srcObject = barcodeScannerState.stream;
+            await video.play();
+            barcodeScannerState.active = true;
+            updateScannerStatus('Align the barcode inside the camera frame.');
+            scanBarcodeFrame();
+        } catch (_err) {
+            updateScannerStatus('Camera access denied or unavailable. You can still type barcode manually.', false);
+        }
+    }
+
     async function submitManualLog(trigger) {
         const payload = {
             source: 'manual',
@@ -668,6 +801,12 @@
         loadWeekBtn.addEventListener('click', () => withCtaLoading(loadWeekBtn, loadWeek, { label: 'Loading…' }));
         generatePlanBtn.addEventListener('click', () => withCtaLoading(generatePlanBtn, generatePlan, { label: 'Generating…' }));
         savePlanBtn.addEventListener('click', () => withCtaLoading(savePlanBtn, saveWeek, { label: 'Saving…' }));
+        document.getElementById('scanBarcodeBtn')?.addEventListener('click', openBarcodeScanner);
+        document.getElementById('closeBarcodeScannerBtn')?.addEventListener('click', stopBarcodeScanner);
+        document.getElementById('cancelBarcodeScannerBtn')?.addEventListener('click', stopBarcodeScanner);
+        document.getElementById('barcodeScannerModal')?.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'barcodeScannerModal') stopBarcodeScanner();
+        });
         document.getElementById('prevWeek').addEventListener('click', () => {
             const w = weekPicker.value();
             weekPicker.setValue(shiftDate(w, -7), true);
@@ -698,6 +837,12 @@
                 const isToggle = t.closest('#weekStartToggle') || t.closest('#dailyDateToggle');
                 if (!isInside && !isToggle) panel.classList.add('hidden');
             });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !document.getElementById('barcodeScannerModal')?.classList.contains('hidden')) {
+                stopBarcodeScanner();
+            }
         });
 
         loadWeek();
