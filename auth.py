@@ -21,7 +21,11 @@ db = LocalProxy(get_db)
 oauth = OAuth()
 
 GUEST_COOKIE_NAME = 'guest_session'
-serializer = URLSafeSerializer(os.getenv('FLASK_SECRET_KEY', 'diet-designer-secret-key-2024'), salt='guest-session')
+
+
+def _guest_cookie_serializer():
+    """Match ``app.secret_key`` so guest cookies from ``after_request`` verify here."""
+    return URLSafeSerializer(current_app.secret_key, salt='guest-session')
 
 
 def init_oauth(app):
@@ -120,9 +124,16 @@ def auth_callback():
         response = make_response(redirect(url_for('index')))
         if guest_cookie:
             try:
-                gid = serializer.loads(guest_cookie)
+                gid = _guest_cookie_serializer().loads(guest_cookie)
                 # Move analyses from guest_session_id to user_id
                 result = db.collection.update_many({'guest_session_id': gid}, {'$set': {'user_id': ObjectId(user_id), 'guest_session_id': None}})
+                try:
+                    db.meal_logs.update_many(
+                        {'guest_session_id': gid},
+                        {'$set': {'user_id': ObjectId(user_id), 'guest_session_id': None}},
+                    )
+                except Exception:
+                    pass
                 # Clear guest cookie
                 response.set_cookie(GUEST_COOKIE_NAME, '', expires=0)
                 flash('We moved your previous analyses to your account', 'success')
@@ -145,7 +156,7 @@ def logout():
     response = make_response(redirect(url_for('index')))
     # After logout, issue a fresh guest cookie
     gid = str(uuid.uuid4())
-    signed = serializer.dumps(gid)
+    signed = _guest_cookie_serializer().dumps(gid)
     response.set_cookie(GUEST_COOKIE_NAME, signed, httponly=True, samesite='Lax', secure=bool(os.getenv('PRODUCTION')))
     return response
 
@@ -232,12 +243,33 @@ def api_me():
     if current_user and getattr(current_user, 'is_authenticated', False):
         return jsonify({'authenticated': True, 'user': {'id': current_user.id, 'email': getattr(current_user, 'email', None), 'name': getattr(current_user, 'name', None), 'picture': getattr(current_user, 'picture', None)}})
     # ensure guest cookie exists
+    from usage_tracker import guest_v3_trial_status
+
     guest = request.cookies.get(GUEST_COOKIE_NAME)
     if not guest:
         gid = str(uuid.uuid4())
-        signed = serializer.dumps(gid)
-        response = make_response(jsonify({'authenticated': False, 'user': None}))
+        signed = _guest_cookie_serializer().dumps(gid)
+        response = make_response(jsonify({'authenticated': False, 'user': None, 'guest_mode': True, 'guest_trial': guest_v3_trial_status(gid)}))
         response.set_cookie(GUEST_COOKIE_NAME, signed, httponly=True, samesite='Lax', secure=bool(os.getenv('PRODUCTION')))
         return response
-    return jsonify({'authenticated': False, 'user': None})
+    try:
+        gid = _guest_cookie_serializer().loads(guest)
+        trial = guest_v3_trial_status(gid)
+    except Exception:
+        # Bad or legacy signature: replace cookie so v3 and after_request agree on a valid session.
+        gid = str(uuid.uuid4())
+        signed = _guest_cookie_serializer().dumps(gid)
+        response = make_response(
+            jsonify(
+                {
+                    'authenticated': False,
+                    'user': None,
+                    'guest_mode': True,
+                    'guest_trial': guest_v3_trial_status(gid),
+                }
+            )
+        )
+        response.set_cookie(GUEST_COOKIE_NAME, signed, httponly=True, samesite='Lax', secure=bool(os.getenv('PRODUCTION')))
+        return response
+    return jsonify({'authenticated': False, 'user': None, 'guest_mode': True, 'guest_trial': trial})
 

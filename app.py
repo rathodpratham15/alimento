@@ -23,7 +23,7 @@ from bson import ObjectId
 from database import get_db
 
 # Usage tracking import
-from usage_tracker import check_limit, track_usage, get_usage_summary
+from usage_tracker import check_limit, track_usage, get_usage_summary, guest_v3_trial_status
 from diet_config import score_meal_adherence
 from diet_config import (
     DIET_CONFIGURATIONS,
@@ -76,6 +76,17 @@ login_manager.init_app(app)
 # Serializer for guest session cookie
 GUEST_COOKIE_NAME = 'guest_session'
 serializer = URLSafeSerializer(app.secret_key, salt='guest-session')
+
+
+def guest_session_uuid():
+    cookie = request.cookies.get(GUEST_COOKIE_NAME)
+    if not cookie:
+        return None
+    try:
+        return serializer.loads(cookie)
+    except Exception:
+        return None
+
 
 # OAuth client will be configured in auth blueprint
 
@@ -135,6 +146,26 @@ app.register_blueprint(profile_bp)
 # Register v3 features blueprint
 from v3_features import v3_bp
 app.register_blueprint(v3_bp)
+
+
+@app.after_request
+def _attach_guest_session_cookie(response):
+    try:
+        if not (current_user and getattr(current_user, "is_authenticated", False)):
+            # Re-issue when missing or when present but fails verification (e.g. rotated FLASK_SECRET_KEY).
+            if guest_session_uuid() is None:
+                gid = str(uuid.uuid4())
+                signed = serializer.dumps(gid)
+                response.set_cookie(
+                    GUEST_COOKIE_NAME,
+                    signed,
+                    httponly=True,
+                    samesite="Lax",
+                    secure=bool(os.getenv("PRODUCTION")),
+                )
+    except Exception:
+        pass
+    return response
 
 
 def ensure_guest_cookie(response=None):
@@ -1674,9 +1705,7 @@ def mstile_fallback(size):
 
 @app.route('/dashboard')
 def dashboard():
-    """Dashboard page (requires login)"""
-    if not (current_user and getattr(current_user, 'is_authenticated', False)):
-        return redirect(url_for('index', login=1, next=request.path))
+    """Dashboard — signed-in users see full history; guests see trial meals only."""
     return render_template('dashboard.html')
 
 
@@ -1689,7 +1718,7 @@ def _parse_client_offset(raw_offset, default=0):
 
 
 def _resolve_dashboard_day(offset_min, date_str=None):
-    utc_now = datetime.utcnow()
+    utc_now = datetime.now(timezone.utc)
     local_now = utc_now - timedelta(minutes=offset_min)
     local_today = local_now.date()
 
@@ -1708,21 +1737,120 @@ def _resolve_dashboard_day(offset_min, date_str=None):
 
 @app.route('/api/dashboard/today')
 def dashboard_today():
-    """Today's metrics for the signed-in user only"""
-    if not (current_user and getattr(current_user, 'is_authenticated', False)):
-        return jsonify({'success': False, 'error': 'auth_required'}), 401
+    """Today's metrics — full data for signed-in users; guest trial meals for anonymous visitors."""
     try:
-        uid = ObjectId(current_user.id)
-
         offset_min = _parse_client_offset(request.args.get('offset', 0), default=0)
         target_date, start, end, is_today, local_today = _resolve_dashboard_day(offset_min, request.args.get('date'))
 
-        meals = list(db.collection.find({'user_id': uid, 'created_at': {'$gte': start, '$lt': end}}).sort('created_at', 1))
-        for m in meals:
-            m['_id'] = str(m['_id'])
-            m['user_id'] = str(m['user_id']) if m.get('user_id') else None
+        if current_user and getattr(current_user, 'is_authenticated', False):
+            uid = ObjectId(current_user.id)
 
-        v3_meals_raw = list(db.meal_logs.find({'user_id': uid, 'logged_at': {'$gte': start, '$lt': end}}).sort('logged_at', 1))
+            meals = list(db.collection.find({'user_id': uid, 'created_at': {'$gte': start, '$lt': end}}).sort('created_at', 1))
+            for m in meals:
+                m['_id'] = str(m['_id'])
+                m['user_id'] = str(m['user_id']) if m.get('user_id') else None
+
+            v3_meals_raw = list(db.meal_logs.find({'user_id': uid, 'logged_at': {'$gte': start, '$lt': end}}).sort('logged_at', 1))
+            for m in v3_meals_raw:
+                macros = m.get('macros') or {}
+                m['_id'] = str(m['_id'])
+                m['created_at'] = m.get('logged_at') or m.get('created_at')
+                m['analysis_json'] = {
+                    'calories_kcal': macros.get('calories_kcal'),
+                    'protein_g': macros.get('protein_g'),
+                    'carbs_g': macros.get('carbs_g'),
+                    'fat_g': macros.get('fat_g'),
+                    'meal_name': m.get('meal_name'),
+                    'meal_identification': m.get('meal_name'),
+                    'source': 'v3',
+                }
+
+            meals = sorted(meals + v3_meals_raw, key=lambda x: x.get('created_at') or x.get('logged_at') or '')
+
+            total_cal = 0.0
+            carbs_g = 0.0
+            protein_g = 0.0
+            fat_g = 0.0
+            adherence_scores = []
+            for m in meals:
+                sj = m.get('analysis_json') or {}
+                if 'calories_kcal' in sj:
+                    total_cal += float(sj.get('calories_kcal') or 0)
+                    carbs_g += float(sj.get('carbs_g') or 0)
+                    protein_g += float(sj.get('protein_g') or 0)
+                    fat_g += float(sj.get('fat_g') or 0)
+                elif sj.get('total_nutrition'):
+                    tn = sj['total_nutrition']
+                    total_cal += float(tn.get('calories') or 0)
+                    carbs_g += float(tn.get('carbs') or 0)
+                    protein_g += float(tn.get('protein') or 0)
+                    fat_g += float(tn.get('fat') or 0)
+                pers = m.get('personalization') or {}
+                ms = pers.get('macro_adherence', {}).get('score')
+                if ms is not None:
+                    adherence_scores.append(float(ms))
+
+            avg_adherence = round(sum(adherence_scores)/len(adherence_scores), 1) if adherence_scores else None
+
+            prefs = db.diet_preferences.find_one({'user_id': uid}) or {}
+            prof = db.user_profiles.find_one({'user_id': uid}) or {}
+            goals = db.nutrition_goals.find_one({'user_id': uid}) or {}
+            diet_slug = prefs.get('diet_type') or 'standard_american'
+            daily_target = goals.get('daily_calories')
+            if not daily_target:
+                try:
+                    bmr = calculate_bmr(float(prof.get('weight_kg') or 0), float(prof.get('height_cm') or 0), int(prof.get('age') or 0), prof.get('biological_sex') or 'female')
+                    tdee = calculate_tdee(bmr, prof.get('activity_level') or 'sedentary')
+                    daily_target = max(1200, int(tdee + goal_adjustment_calories(goals.get('goal_type') or 'maintain_weight')))
+                except Exception:
+                    daily_target = None
+
+            today_key = target_date.strftime('%Y-%m-%d')
+            hyd = db.hydration_logs.find_one({'user_id': uid, 'date': today_key}) or {'glasses': 0, 'ml': 0}
+
+            return jsonify({
+                'success': True,
+                'guest_mode': False,
+                'diet_type': diet_slug,
+                'totals': {
+                    'calories': round(total_cal, 1),
+                    'carbs_g': round(carbs_g, 1),
+                    'protein_g': round(protein_g, 1),
+                    'fat_g': round(fat_g, 1),
+                },
+                'targets': {
+                    'calories': daily_target,
+                    'macros_g': calculate_macro_grams(daily_target, diet_slug) if daily_target else None
+                },
+                'adherence_avg': avg_adherence,
+                'meals': [
+                    {
+                        'id': m['_id'],
+                        'ts': (m['created_at'].isoformat() + 'Z') if hasattr(m.get('created_at'), 'isoformat') else (m.get('created_at') or m.get('timestamp')),
+                        'analysis_json': m.get('analysis_json'),
+                        'personalization': m.get('personalization'),
+                        'image_path': m.get('image_path'),
+                        'image_base64': m.get('image_base64'),
+                        'source_kind': 'v3' if (m.get('analysis_json') or {}).get('source') == 'v3' else 'legacy',
+                        'meal_type': m.get('meal_type'),
+                        'raw_input': m.get('raw_input'),
+                    } for m in meals
+                ],
+                'hydration': {
+                    'glasses': hyd.get('glasses', 0),
+                    'ml': hyd.get('ml', 0)
+                },
+                'selected_date': target_date.isoformat(),
+                'is_today': is_today,
+                'local_today': local_today.isoformat(),
+            })
+
+        gid = guest_session_uuid()
+        if not gid:
+            return jsonify({'success': False, 'error': 'auth_required'}), 401
+
+        meals = []
+        v3_meals_raw = list(db.meal_logs.find({'guest_session_id': gid, 'logged_at': {'$gte': start, '$lt': end}}).sort('logged_at', 1))
         for m in v3_meals_raw:
             macros = m.get('macros') or {}
             m['_id'] = str(m['_id'])
@@ -1737,51 +1865,31 @@ def dashboard_today():
                 'source': 'v3',
             }
 
-        meals = sorted(meals + v3_meals_raw, key=lambda x: x.get('created_at') or x.get('logged_at') or '')
-
         total_cal = 0.0
         carbs_g = 0.0
         protein_g = 0.0
         fat_g = 0.0
         adherence_scores = []
-        for m in meals:
+        for m in v3_meals_raw:
             sj = m.get('analysis_json') or {}
             if 'calories_kcal' in sj:
                 total_cal += float(sj.get('calories_kcal') or 0)
                 carbs_g += float(sj.get('carbs_g') or 0)
                 protein_g += float(sj.get('protein_g') or 0)
                 fat_g += float(sj.get('fat_g') or 0)
-            elif sj.get('total_nutrition'):
-                tn = sj['total_nutrition']
-                total_cal += float(tn.get('calories') or 0)
-                carbs_g += float(tn.get('carbs') or 0)
-                protein_g += float(tn.get('protein') or 0)
-                fat_g += float(tn.get('fat') or 0)
             pers = m.get('personalization') or {}
             ms = pers.get('macro_adherence', {}).get('score')
             if ms is not None:
                 adherence_scores.append(float(ms))
 
         avg_adherence = round(sum(adherence_scores)/len(adherence_scores), 1) if adherence_scores else None
-
-        prefs = db.diet_preferences.find_one({'user_id': uid}) or {}
-        prof = db.user_profiles.find_one({'user_id': uid}) or {}
-        goals = db.nutrition_goals.find_one({'user_id': uid}) or {}
-        diet_slug = prefs.get('diet_type') or 'standard_american'
-        daily_target = goals.get('daily_calories')
-        if not daily_target:
-            try:
-                bmr = calculate_bmr(float(prof.get('weight_kg') or 0), float(prof.get('height_cm') or 0), int(prof.get('age') or 0), prof.get('biological_sex') or 'female')
-                tdee = calculate_tdee(bmr, prof.get('activity_level') or 'sedentary')
-                daily_target = max(1200, int(tdee + goal_adjustment_calories(goals.get('goal_type') or 'maintain_weight')))
-            except Exception:
-                daily_target = None
-
-        today_key = target_date.strftime('%Y-%m-%d')
-        hyd = db.hydration_logs.find_one({'user_id': uid, 'date': today_key}) or {'glasses': 0, 'ml': 0}
+        diet_slug = 'standard_american'
+        daily_target = 2000
 
         return jsonify({
             'success': True,
+            'guest_mode': True,
+            'guest_trial': guest_v3_trial_status(gid),
             'diet_type': diet_slug,
             'totals': {
                 'calories': round(total_cal, 1),
@@ -1791,7 +1899,7 @@ def dashboard_today():
             },
             'targets': {
                 'calories': daily_target,
-                'macros_g': calculate_macro_grams(daily_target, diet_slug) if daily_target else None
+                'macros_g': calculate_macro_grams(daily_target, diet_slug),
             },
             'adherence_avg': avg_adherence,
             'meals': [
@@ -1802,15 +1910,12 @@ def dashboard_today():
                     'personalization': m.get('personalization'),
                     'image_path': m.get('image_path'),
                     'image_base64': m.get('image_base64'),
-                    'source_kind': 'v3' if (m.get('analysis_json') or {}).get('source') == 'v3' else 'legacy',
+                    'source_kind': 'v3',
                     'meal_type': m.get('meal_type'),
                     'raw_input': m.get('raw_input'),
-                } for m in meals
+                } for m in v3_meals_raw
             ],
-            'hydration': {
-                'glasses': hyd.get('glasses', 0),
-                'ml': hyd.get('ml', 0)
-            },
+            'hydration': {'glasses': 0, 'ml': 0},
             'selected_date': target_date.isoformat(),
             'is_today': is_today,
             'local_today': local_today.isoformat(),
@@ -1836,7 +1941,7 @@ def dashboard_hydration():
             offset_min = 300
 
         # Calculate "User's Today" based on offset
-        utc_now = datetime.utcnow()
+        utc_now = datetime.now(timezone.utc)
         local_now = utc_now - timedelta(minutes=offset_min)
         
         # Calculate hydration for today (Local Day)

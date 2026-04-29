@@ -79,6 +79,7 @@ class MongoDBManager:
 
             # V3 feature collections
             self.meal_logs = self.db.meal_logs
+            self.guest_v3_trials = self.db.guest_v3_trials
             self.food_items = self.db.food_items
             self.inventory_items = self.db.inventory_items
             self.inventory_meal_suggestions = self.db.inventory_meal_suggestions
@@ -168,6 +169,7 @@ class MongoDBManager:
 
             # V3 indexes
             self.meal_logs.create_index([('user_id', ASCENDING), ('logged_at', DESCENDING)])
+            self.meal_logs.create_index([('guest_session_id', ASCENDING), ('logged_at', DESCENDING)])
             self.meal_logs.create_index([('source', ASCENDING), ('created_at', DESCENDING)])
             self.meal_logs.create_index([('schema_version', ASCENDING)])
 

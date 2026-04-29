@@ -256,6 +256,9 @@
 {% block scripts %}
 <script>
   (async function initDashboard() {
+    /* Prime guest_session cookie before API calls (same secret as server; avoids race with HTML Set-Cookie). */
+    await fetch('/api/me', { credentials: 'same-origin' }).catch(() => {});
+
     const dateInput = document.getElementById('dashboardDate');
     const calendarToggle = document.getElementById('calendarToggle');
     const calendarToggleLabel = document.getElementById('calendarToggleLabel');

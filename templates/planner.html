@@ -192,6 +192,7 @@
             invalid_barcode: 'Barcode must be at least 8 digits.',
             ai_generation_failed: 'Could not analyze this meal right now. Try again in a moment.',
             ai_unavailable: 'AI is temporarily unavailable.',
+            guest_trial_exhausted: 'You used all 3 free meal logs. Sign in with Google to continue logging.',
         };
         return byCode[data.error] || data.error || 'Could not log meal.';
     }
@@ -402,6 +403,16 @@
             generateBtn.disabled = false;
             return;
         }
+        if (data.guest_mode) {
+            const gt = data.guest_trial || {};
+            const rem = gt.remaining != null ? gt.remaining : 3;
+            el.innerHTML = `<strong class="text-amber-800 dark:text-amber-200">Guest trial:</strong> ${rem} of ${gt.limit || 3} free meal logs left. <a href="/login" class="underline font-semibold">Sign in</a> to save your plan and use AI generation.`;
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-60', 'cursor-not-allowed');
+            generateBtn.title = 'Sign in to generate a weekly plan with AI.';
+            return;
+        }
+        generateBtn.title = '';
         const missing = data.missing || [];
         const plannerRequired = ['diet_type', 'goal_type', 'age', 'height_cm', 'weight_kg', 'biological_sex', 'activity_level'];
         const plannerMissing = missing.filter(m => plannerRequired.includes(m));
@@ -742,7 +753,9 @@
         }, { label: 'Analyzing…' });
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+        await fetch('/api/me', { credentials: 'same-origin' }).catch(() => {});
+
         const weekStartInput = document.getElementById('weekStart');
         const dailyDateInput = document.getElementById('dailyDate');
         weekStartInput.value = mondayDateString();

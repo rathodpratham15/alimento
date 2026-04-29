@@ -262,7 +262,10 @@
         if (e.target.classList && e.target.classList.contains('inv-select')) syncInvBulkUI();
     });
     bulkDeleteInventoryBtn.addEventListener('click', () => withCtaLoading(bulkDeleteInventoryBtn, bulkDeleteInventory, { label: 'Deleting…' }));
-    loadInventory();
-    loadSavedSuggestions();
+    (async () => {
+        await fetch('/api/me', { credentials: 'same-origin' }).catch(() => {});
+        await loadInventory();
+        await loadSavedSuggestions();
+    })();
 </script>
 {% endblock %}

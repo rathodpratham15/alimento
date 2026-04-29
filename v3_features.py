@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, render_template, redirect, url_for
+from flask import Blueprint, current_app, jsonify, request, render_template, redirect, url_for
 from flask_login import current_user
 from bson import ObjectId
 from datetime import datetime, timedelta, timezone
@@ -21,6 +21,12 @@ from werkzeug.local import LocalProxy
 
 from database import get_db
 from diet_config import compute_macro_adherence_10pt
+from usage_tracker import (
+    GUEST_V3_TRIAL_LIMIT,
+    guest_v3_trial_status,
+    refund_guest_v3_trial,
+    try_reserve_guest_v3_trial,
+)
 
 
 v3_bp = Blueprint("v3", __name__)
@@ -96,6 +102,79 @@ def _auth_guard():
         pass
 
     return user_id, None
+
+
+def _guest_uuid_from_cookie():
+    """Must use the same signing key as ``app.py`` / ``auth`` (``current_app.secret_key``)."""
+    from itsdangerous import URLSafeSerializer
+
+    cookie = request.cookies.get("guest_session")
+    if not cookie:
+        return None
+    try:
+        ser = URLSafeSerializer(current_app.secret_key, salt="guest-session")
+        return ser.loads(cookie)
+    except Exception:
+        return None
+
+
+def _actor_resolve():
+    """Return (user_id ObjectId | None, guest_uuid str | None, error_response | None)."""
+    if _is_authed():
+        user_id = ObjectId(current_user.id)
+        try:
+            migrate_user_history_to_meal_logs(user_id)
+        except Exception:
+            pass
+        return user_id, None, None
+    gid = _guest_uuid_from_cookie()
+    if not gid:
+        return None, None, (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "auth_required",
+                    "message": "Reload the page to start a guest session, or sign in.",
+                }
+            ),
+            401,
+        )
+    return None, gid, None
+
+
+def _guest_default_context():
+    """Minimal context when no user profile exists (anonymous trial)."""
+    return {
+        "diet_type": "standard_american",
+        "allergies": [],
+        "food_restrictions": [],
+        "meal_timing_preference": None,
+        "prep_time_limit": None,
+        "budget_per_meal": None,
+        "meal_prep_preference": None,
+        "class_schedule": {},
+        "cooking_skill": None,
+        "living_situation": None,
+        "goal_type": "maintain_weight",
+        "target_weight_kg": None,
+        "timeline_weeks": None,
+        "secondary_goals": [],
+        "daily_calories": 2000,
+        "target_protein_g": None,
+        "target_carbs_g": None,
+        "target_fat_g": None,
+        "target_fiber_g": None,
+        "target_sodium_mg": None,
+        "target_sugar_g": None,
+        "height_cm": None,
+        "weight_kg": None,
+        "age": None,
+        "biological_sex": None,
+        "activity_level": None,
+        "health_conditions": [],
+        "medications": None,
+        "supplements": [],
+    }
 
 
 def _serialize_oid(doc):
@@ -418,11 +497,14 @@ Diet context: {ctx.get('diet_type', 'standard_american')}
     }
 
 
-def _save_meal_log(user_id, payload):
+def _save_meal_log(payload, *, user_id=None, guest_session_id=None):
+    if (user_id is None) == (guest_session_id is None):
+        raise ValueError("Exactly one of user_id or guest_session_id must be set")
     now = datetime.now(timezone.utc)
     meal = {
         "schema_version": 3,
         "user_id": user_id,
+        "guest_session_id": guest_session_id,
         "source": payload.get("source", "manual"),
         "meal_name": payload.get("meal_name", "Meal"),
         "notes": payload.get("notes", ""),
@@ -1109,29 +1191,21 @@ def _inventory_status(item, now=None):
 
 @v3_bp.route("/inventory")
 def inventory_page():
-    if not _is_authed():
-        return redirect(url_for("index", login=1, next=request.path))
     return render_template("inventory.html")
 
 
 @v3_bp.route("/planner")
 def planner_page():
-    if not _is_authed():
-        return redirect(url_for("index", login=1, next=request.path))
     return render_template("planner.html")
 
 
 @v3_bp.route("/recipes")
 def recipes_page():
-    if not _is_authed():
-        return redirect(url_for("index", login=1, next=request.path))
     return render_template("recipes.html")
 
 
 @v3_bp.route("/progress")
 def progress_page():
-    if not _is_authed():
-        return redirect(url_for("index", login=1, next=request.path))
     return render_template("progress.html")
 
 
@@ -1178,9 +1252,22 @@ def v3_status():
 
 @v3_bp.route("/api/v3/context")
 def v3_context():
-    user_id, err = _auth_guard()
+    user_id, guest_sid, err = _actor_resolve()
     if err:
         return err
+
+    if guest_sid:
+        ctx = _guest_default_context()
+        return jsonify(
+            {
+                "success": True,
+                "guest_mode": True,
+                "context": ctx,
+                "missing": [],
+                "completeness": 0,
+                "guest_trial": guest_v3_trial_status(guest_sid),
+            }
+        )
 
     ctx = _get_user_context(user_id)
     required_keys = [
@@ -1198,7 +1285,15 @@ def v3_context():
     ]
     missing = _context_missing_fields(user_id)
     completeness = max(0, min(100, int(((len(required_keys) - len(missing)) / len(required_keys)) * 100)))
-    return jsonify({"success": True, "context": ctx, "missing": missing, "completeness": completeness})
+    return jsonify(
+        {
+            "success": True,
+            "guest_mode": False,
+            "context": ctx,
+            "missing": missing,
+            "completeness": completeness,
+        }
+    )
 
 
 @v3_bp.route("/api/v3/migrate", methods=["POST"])
@@ -1212,7 +1307,7 @@ def v3_migrate():
 
 @v3_bp.route("/api/v3/barcode/<barcode>")
 def v3_barcode_lookup(barcode):
-    user_id, err = _auth_guard()
+    user_id, guest_sid, err = _actor_resolve()
     if err:
         return err
 
@@ -1253,17 +1348,17 @@ def v3_barcode_lookup(barcode):
 
     clean = dict(fetched_doc)
     clean.pop("raw", None)
-    clean["created_by"] = str(user_id)
+    clean["created_by"] = str(user_id) if user_id else None
     return jsonify({"success": True, "data": clean, "cached": False})
 
 
 @v3_bp.route("/api/v3/meals/log", methods=["POST"])
 def v3_meals_log():
-    user_id, err = _auth_guard()
+    user_id, guest_sid, err = _actor_resolve()
     if err:
         return err
 
-    user_context = _get_user_context(user_id)
+    user_context = _get_user_context(user_id) if user_id else _guest_default_context()
     now = datetime.now(timezone.utc)
 
     source = request.form.get("source") if request.form else None
@@ -1285,12 +1380,41 @@ def v3_meals_log():
         "notes": notes,
     }
 
+    trial_reserved = False
+
+    def _guest_trial_fail_response(msg):
+        trial = guest_v3_trial_status(guest_sid) if guest_sid else None
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "guest_trial_exhausted",
+                    "message": msg,
+                    "guest_trial": trial,
+                }
+            ),
+            403,
+        )
+
+    if guest_sid:
+        if not try_reserve_guest_v3_trial(guest_sid):
+            return _guest_trial_fail_response(
+                f"You have used all {GUEST_V3_TRIAL_LIMIT} free meal logs. Sign in with Google to continue."
+            )
+        trial_reserved = True
+
+    def _refund_trial():
+        if trial_reserved and guest_sid:
+            refund_guest_v3_trial(guest_sid)
+
     if source == "text":
         text_input = (request.form.get("text_input") if request.form else None) or data.get("text_input") or data.get("text")
         if not text_input:
+            _refund_trial()
             return jsonify({"success": False, "error": "text_input_required"}), 400
         structured = _ai_structured_from_text(text_input, user_context)
         if not structured:
+            _refund_trial()
             return jsonify({"success": False, "error": "ai_generation_failed", "message": "Gemini could not parse meal text."}), 502
         payload.update(
             {
@@ -1309,6 +1433,7 @@ def v3_meals_log():
     elif source == "barcode":
         barcode = (request.form.get("barcode") if request.form else None) or data.get("barcode")
         if not barcode:
+            _refund_trial()
             return jsonify(
                 {"success": False, "error": "barcode_required", "message": "Enter a barcode number."}
             ), 400
@@ -1318,6 +1443,7 @@ def v3_meals_log():
         if not cached:
             fetched = _lookup_barcode_openfoodfacts(barcode)
             if not fetched:
+                _refund_trial()
                 return jsonify(
                     {
                         "success": False,
@@ -1363,13 +1489,16 @@ def v3_meals_log():
         try:
             img = _image_from_request(image_file, image_url)
         except Exception as e:
+            _refund_trial()
             return jsonify({"success": False, "error": "image_processing_failed", "message": str(e)}), 400
 
         if img is None:
+            _refund_trial()
             return jsonify({"success": False, "error": "image_required"}), 400
 
         structured = _ai_structured_from_image(img, user_context)
         if not structured:
+            _refund_trial()
             return jsonify({"success": False, "error": "ai_generation_failed", "message": "Gemini could not analyze meal image."}), 502
         payload.update(
             {
@@ -1423,8 +1552,20 @@ def v3_meals_log():
         macro_score = {"score": None, "explanation": "computation_error"}
     payload['macro_adherence'] = macro_score
 
-    meal_doc = _save_meal_log(user_id, payload)
-    return jsonify({"success": True, "meal": meal_doc})
+    try:
+        if user_id:
+            meal_doc = _save_meal_log(payload, user_id=user_id)
+        else:
+            meal_doc = _save_meal_log(payload, guest_session_id=guest_sid)
+    except Exception:
+        _refund_trial()
+        raise
+
+    meal_doc.pop("guest_session_id", None)
+    out = {"success": True, "meal": meal_doc}
+    if guest_sid:
+        out["guest_trial"] = guest_v3_trial_status(guest_sid)
+    return jsonify(out)
 
 
 @v3_bp.route("/api/v3/meals/<meal_id>", methods=["PATCH", "DELETE"])
@@ -1532,7 +1673,7 @@ def v3_meals_list():
 
 @v3_bp.route("/api/v3/meals/by-date")
 def v3_meals_by_date():
-    user_id, err = _auth_guard()
+    user_id, guest_sid, err = _actor_resolve()
     if err:
         return err
 
@@ -1545,15 +1686,24 @@ def v3_meals_by_date():
         tz_name = "UTC"
         start_utc, end_utc, local_day = _day_bounds_in_utc(day_str, tz_name)
 
-    cursor = db.meal_logs.find(
-        {
+    if user_id:
+        query = {
             "user_id": user_id,
             "logged_at": {
                 "$gte": start_utc,
                 "$lt": end_utc,
             },
         }
-    ).sort("logged_at", 1)
+    else:
+        query = {
+            "guest_session_id": guest_sid,
+            "logged_at": {
+                "$gte": start_utc,
+                "$lt": end_utc,
+            },
+        }
+
+    cursor = db.meal_logs.find(query).sort("logged_at", 1)
 
     meals = []
     totals = {
@@ -1598,16 +1748,18 @@ def v3_meals_by_date():
             }
         )
 
-    return jsonify(
-        {
-            "success": True,
-            "date": local_day.isoformat(),
-            "timezone": tz_name,
-            "count": len(meals),
-            "totals": {k: round(v, 2) for k, v in totals.items()},
-            "meals": meals,
-        }
-    )
+    payload = {
+        "success": True,
+        "date": local_day.isoformat(),
+        "timezone": tz_name,
+        "count": len(meals),
+        "totals": {k: round(v, 2) for k, v in totals.items()},
+        "meals": meals,
+    }
+    if guest_sid:
+        payload["guest_mode"] = True
+        payload["guest_trial"] = guest_v3_trial_status(guest_sid)
+    return jsonify(payload)
 
 
 @v3_bp.route("/api/v3/recipes", methods=["GET", "POST"])

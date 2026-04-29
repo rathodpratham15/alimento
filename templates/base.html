@@ -64,11 +64,24 @@
 <body class="min-h-full flex flex-col font-sans text-gray-900 dark:text-gray-100 selection:bg-purple-500/30"
     data-authenticated="{{ current_user.is_authenticated|tojson }}">
 
+    {% set guest_browsing = not (current_user and current_user.is_authenticated) %}
+
+    {% if guest_browsing %}
+    <div
+        id="guestBanner"
+        class="relative z-40 w-full shrink-0 bg-amber-50/95 dark:bg-amber-950/90 border-b border-amber-200 dark:border-amber-800 px-3 sm:px-4 py-2.5 text-center text-[11px] sm:text-sm text-amber-950 dark:text-amber-100 shadow-sm">
+        <span>Browsing as a guest — <strong>3 free meal logs</strong> on the Planner. </span>
+        <a href="{{ url_for('auth.login') }}" class="underline font-semibold">Sign in with Google</a>
+        <span> to keep history, inventory, and social features.</span>
+    </div>
+    {% endif %}
+
     {% set show_nav_value %}{% block show_nav %}true{% endblock %}{% endset %}
 
-    <!-- Floating Glass Navigation -->
+    <!-- Floating Glass Navigation: fixed ignores document flow, so guest mode offsets top past #guestBanner -->
     {% if show_nav_value.strip() != 'false' %}
-    <div class="fixed top-4 left-0 right-0 z-50 flex justify-center px-3 sm:px-4">
+    <div id="mainNavBar"
+        class="fixed left-0 right-0 z-50 flex justify-center px-3 sm:px-4 {{ 'guest-nav-offset' if guest_browsing else 'top-4' }}">
         <nav
             class="glass-pill rounded-2xl lg:rounded-full px-4 sm:px-6 py-3 flex items-center justify-between w-full max-w-7xl transition-all duration-200">
 
@@ -90,8 +103,8 @@
                     class="px-4 py-2 rounded-full text-sm font-medium transition-colors {% if request.endpoint == 'index' %}nav-link-active{% else %}text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100/50 dark:hover:bg-white/5{% endif %}">
                     Home
                 </a>
-                <a href="/dashboard" data-login-next="/dashboard"
-                    class="auth-required-link px-4 py-2 rounded-full text-sm font-medium transition-colors {% if request.endpoint == 'dashboard' %}nav-link-active{% else %}text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100/50 dark:hover:bg-white/5{% endif %}">
+                <a href="/dashboard"
+                    class="px-4 py-2 rounded-full text-sm font-medium transition-colors {% if request.endpoint == 'dashboard' %}nav-link-active{% else %}text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100/50 dark:hover:bg-white/5{% endif %}">
                     Dashboard
                 </a>
                 <div class="relative group">
@@ -104,7 +117,7 @@
                         class="absolute left-0 top-full mt-2 min-w-[14.5rem] surface-solid rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[140] overflow-visible">
                         <div class="p-2 space-y-1">
                             <div class="group/row relative flex items-stretch rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-white/10">
-                                <a href="/inventory" data-login-next="/inventory" class="auth-required-link flex min-w-0 flex-1 items-center gap-2 px-3 py-2"><i class="ph ph-package shrink-0"></i><span>Inventory</span></a>
+                                <a href="/inventory" class="flex min-w-0 flex-1 items-center gap-2 px-3 py-2"><i class="ph ph-package shrink-0"></i><span>Inventory</span></a>
                                 <div class="flex shrink-0 items-center pr-1.5 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/row:pointer-events-auto group-hover/row:opacity-100 has-[:focus]:pointer-events-auto has-[:focus]:opacity-100">
                                     <button type="button" class="group/info relative inline-flex rounded border-0 bg-transparent p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60" aria-label="What Inventory does">
                                         <i class="ph ph-info pointer-events-none text-base text-gray-400 group-hover/info:text-purple-600 dark:text-gray-500 dark:group-hover/info:text-purple-400" aria-hidden="true"></i>
@@ -113,7 +126,7 @@
                                 </div>
                             </div>
                             <div class="group/row relative flex items-stretch rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-white/10">
-                                <a href="/planner" data-login-next="/planner" class="auth-required-link flex min-w-0 flex-1 items-center gap-2 px-3 py-2"><i class="ph ph-calendar shrink-0"></i><span>Planner</span></a>
+                                <a href="/planner" class="flex min-w-0 flex-1 items-center gap-2 px-3 py-2"><i class="ph ph-calendar shrink-0"></i><span>Planner</span></a>
                                 <div class="flex shrink-0 items-center pr-1.5 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/row:pointer-events-auto group-hover/row:opacity-100 has-[:focus]:pointer-events-auto has-[:focus]:opacity-100">
                                     <button type="button" class="group/info relative inline-flex rounded border-0 bg-transparent p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60" aria-label="What Planner does">
                                         <i class="ph ph-info pointer-events-none text-base text-gray-400 group-hover/info:text-purple-600 dark:text-gray-500 dark:group-hover/info:text-purple-400" aria-hidden="true"></i>
@@ -122,7 +135,7 @@
                                 </div>
                             </div>
                             <div class="group/row relative flex items-stretch rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-white/10">
-                                <a href="/recipes" data-login-next="/recipes" class="auth-required-link flex min-w-0 flex-1 items-center gap-2 px-3 py-2"><i class="ph ph-book-open shrink-0"></i><span>Recipes</span></a>
+                                <a href="/recipes" class="flex min-w-0 flex-1 items-center gap-2 px-3 py-2"><i class="ph ph-book-open shrink-0"></i><span>Recipes</span></a>
                                 <div class="flex shrink-0 items-center pr-1.5 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/row:pointer-events-auto group-hover/row:opacity-100 has-[:focus]:pointer-events-auto has-[:focus]:opacity-100">
                                     <button type="button" class="group/info relative inline-flex rounded border-0 bg-transparent p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60" aria-label="What Recipes does">
                                         <i class="ph ph-info pointer-events-none text-base text-gray-400 group-hover/info:text-purple-600 dark:text-gray-500 dark:group-hover/info:text-purple-400" aria-hidden="true"></i>
@@ -131,7 +144,7 @@
                                 </div>
                             </div>
                             <div class="group/row relative flex items-stretch rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-white/10">
-                                <a href="/progress" data-login-next="/progress" class="auth-required-link flex min-w-0 flex-1 items-center gap-2 px-3 py-2"><i class="ph ph-chart-bar shrink-0"></i><span>Progress</span></a>
+                                <a href="/progress" class="flex min-w-0 flex-1 items-center gap-2 px-3 py-2"><i class="ph ph-chart-bar shrink-0"></i><span>Progress</span></a>
                                 <div class="flex shrink-0 items-center pr-1.5 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/row:pointer-events-auto group-hover/row:opacity-100 has-[:focus]:pointer-events-auto has-[:focus]:opacity-100">
                                     <button type="button" class="group/info relative inline-flex rounded border-0 bg-transparent p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60" aria-label="What Progress does">
                                         <i class="ph ph-info pointer-events-none text-base text-gray-400 group-hover/info:text-purple-600 dark:text-gray-500 dark:group-hover/info:text-purple-400" aria-hidden="true"></i>
@@ -261,11 +274,11 @@
         <div class="glass-panel rounded-2xl p-3 shadow-xl">
             <div class="grid grid-cols-2 gap-2">
                 <a href="/" class="mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Home</a>
-                <a href="/dashboard" data-login-next="/dashboard" class="auth-required-link mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Dashboard</a>
-                <a href="/inventory" data-login-next="/inventory" class="auth-required-link mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Inventory</a>
-                <a href="/planner" data-login-next="/planner" class="auth-required-link mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Planner</a>
-                <a href="/recipes" data-login-next="/recipes" class="auth-required-link mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Recipes</a>
-                <a href="/progress" data-login-next="/progress" class="auth-required-link mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Progress</a>
+                <a href="/dashboard" class="mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Dashboard</a>
+                <a href="/inventory" class="mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Inventory</a>
+                <a href="/planner" class="mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Planner</a>
+                <a href="/recipes" class="mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Recipes</a>
+                <a href="/progress" class="mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Progress</a>
                 <a href="/social" data-login-next="/social" class="auth-required-link mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Social</a>
             </div>
         </div>
@@ -304,8 +317,9 @@
         </div>
     </div>
 
-    <!-- Main Content -->
-    <main class="flex-grow {% if show_nav_value.strip() != 'false' %}pt-24 sm:pt-28{% else %}pt-4 sm:pt-6{% endif %} pb-12 sm:pb-16 px-2 sm:px-6 lg:px-8">
+    <!-- Main Content (guest: top padding set by syncGuestBannerNav — avoids overlap with banner + fixed nav) -->
+    <main id="mainContent"
+        class="flex-grow {% if show_nav_value.strip() != 'false' %}{% if guest_browsing %}pt-0{% else %}pt-24 sm:pt-28{% endif %}{% else %}pt-4 sm:pt-6{% endif %} pb-12 sm:pb-16 px-2 sm:px-6 lg:px-8">
         {% block content %}{% endblock %}
     </main>
 
@@ -339,8 +353,8 @@
                             <li><a href="/"
                                     class="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Home</a>
                             </li>
-                            <li><a href="/dashboard" data-login-next="/dashboard"
-                                    class="auth-required-link text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Dashboard</a>
+                            <li><a href="/dashboard"
+                                    class="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Dashboard</a>
                             </li>
                         </ul>
                     </div>
@@ -348,17 +362,17 @@
                     <div>
                         <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Tools</h3>
                         <ul class="space-y-3">
-                            <li><a href="/inventory" data-login-next="/inventory"
-                                    class="auth-required-link text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Inventory</a>
+                            <li><a href="/inventory"
+                                    class="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Inventory</a>
                             </li>
-                            <li><a href="/planner" data-login-next="/planner"
-                                    class="auth-required-link text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Planner</a>
+                            <li><a href="/planner"
+                                    class="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Planner</a>
                             </li>
-                            <li><a href="/recipes" data-login-next="/recipes"
-                                    class="auth-required-link text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Recipes</a>
+                            <li><a href="/recipes"
+                                    class="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Recipes</a>
                             </li>
-                            <li><a href="/progress" data-login-next="/progress"
-                                    class="auth-required-link text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Progress</a>
+                            <li><a href="/progress"
+                                    class="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Progress</a>
                             </li>
                             <li><a href="/social" data-login-next="/social"
                                     class="auth-required-link text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Social</a>
@@ -491,6 +505,41 @@
             toggleModal(true, qs.get('next') || window.location.pathname);
         }
     </script>
+    {% if guest_browsing and show_nav_value.strip() != 'false' %}
+    <script>
+        (function () {
+            function syncGuestBannerNav() {
+                var b = document.getElementById('guestBanner');
+                var n = document.getElementById('mainNavBar');
+                var m = document.getElementById('mainContent');
+                if (!b || !n || !m) return;
+                var bh = b.offsetHeight;
+                var gap = 10;
+                n.style.top = (bh + gap) + 'px';
+                requestAnimationFrame(function () {
+                    var nh = n.offsetHeight;
+                    m.style.paddingTop = (bh + gap + nh + 16) + 'px';
+                });
+            }
+            function run() {
+                syncGuestBannerNav();
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', run);
+            } else {
+                run();
+            }
+            var t;
+            window.addEventListener('resize', function () {
+                clearTimeout(t);
+                t = setTimeout(syncGuestBannerNav, 120);
+            });
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(syncGuestBannerNav);
+            }
+        })();
+    </script>
+    {% endif %}
     <script src="{{ url_for('static', filename='cta-loading.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>

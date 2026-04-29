@@ -2,8 +2,11 @@
 from datetime import datetime, timezone
 from database import get_db
 from flask_login import current_user
-from flask import request
+from flask import current_app, request
 import uuid
+
+# Lifetime guest trial for V3 meal logging (see guest_v3_trial_* helpers).
+GUEST_V3_TRIAL_LIMIT = 3
 
 # Daily limits configuration
 LIMITS = {
@@ -26,11 +29,10 @@ def get_current_scope():
     if current_user and getattr(current_user, 'is_authenticated', False):
         return f"user:{current_user.id}"
     
-    # For guests, use session cookie (similar to guest_session_id logic)
+    # For guests, use session cookie (same signing key as app / v3 guest APIs)
     from itsdangerous import URLSafeSerializer
-    import os
-    
-    serializer = URLSafeSerializer(os.getenv('FLASK_SECRET_KEY', 'diet-designer-secret-key-2024'), salt='guest-session')
+
+    serializer = URLSafeSerializer(current_app.secret_key, salt='guest-session')
     cookie = request.cookies.get('guest_session')
     
     if cookie:
@@ -160,3 +162,49 @@ def get_usage_summary(scope=None, date=None):
     except Exception as e:
         print(f"Error getting usage summary: {e}")
         return {}
+
+
+def _guest_v3_trials_collection():
+    db = get_db()
+    if not db or not getattr(db, "client", None):
+        return None
+    return getattr(db, "guest_v3_trials", None)
+
+
+def guest_v3_trial_status(guest_uuid):
+    """Return {limit, used, remaining} for lifetime V3 guest meal trial."""
+    coll = _guest_v3_trials_collection()
+    if coll is None or not guest_uuid:
+        return {"limit": GUEST_V3_TRIAL_LIMIT, "used": 0, "remaining": GUEST_V3_TRIAL_LIMIT}
+    doc = coll.find_one({"_id": guest_uuid})
+    used = int(doc.get("count", 0)) if doc else 0
+    used = max(0, min(used, GUEST_V3_TRIAL_LIMIT))
+    rem = max(0, GUEST_V3_TRIAL_LIMIT - used)
+    return {"limit": GUEST_V3_TRIAL_LIMIT, "used": used, "remaining": rem}
+
+
+def try_reserve_guest_v3_trial(guest_uuid):
+    """Atomically consume one trial slot before expensive work (AI / IO). Returns True if reserved."""
+    from pymongo import ReturnDocument
+
+    coll = _guest_v3_trials_collection()
+    if coll is None or not guest_uuid:
+        return False
+    coll.update_one({"_id": guest_uuid}, {"$setOnInsert": {"count": 0}}, upsert=True)
+    after = coll.find_one_and_update(
+        {"_id": guest_uuid, "count": {"$lt": GUEST_V3_TRIAL_LIMIT}},
+        {"$inc": {"count": 1}},
+        return_document=ReturnDocument.AFTER,
+    )
+    return after is not None
+
+
+def refund_guest_v3_trial(guest_uuid):
+    """Release one reserved slot if downstream work failed after try_reserve_guest_v3_trial."""
+    coll = _guest_v3_trials_collection()
+    if coll is None or not guest_uuid:
+        return
+    try:
+        coll.update_one({"_id": guest_uuid, "count": {"$gt": 0}}, {"$inc": {"count": -1}})
+    except Exception as e:
+        print(f"Error refunding guest V3 trial: {e}")

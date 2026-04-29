@@ -767,3 +767,8 @@ html {
         scroll-behavior: auto !important;
     }
 }
+
+/* Guest banner + fixed nav: JS sets exact top; fallback if script is delayed */
+#mainNavBar.guest-nav-offset {
+    top: 5rem;
+}
