@@ -166,7 +166,7 @@ def get_usage_summary(scope=None, date=None):
 
 def _guest_v3_trials_collection():
     db = get_db()
-    if not db or not getattr(db, "client", None):
+    if getattr(db, "client", None) is None:
         return None
     return getattr(db, "guest_v3_trials", None)
 

@@ -2189,10 +2189,6 @@ def v3_inventory_suggestions():
 
 @v3_bp.route("/api/v3/planner/week", methods=["GET", "POST"])
 def v3_planner_week():
-    user_id, err = _auth_guard()
-    if err:
-        return err
-
     def _parse_week_start(raw):
         if not raw:
             return None
@@ -2209,6 +2205,25 @@ def v3_planner_week():
 
     week_start = _parse_week_start(week_start_raw) or _week_start(datetime.now(timezone.utc))
     week_start = datetime(week_start.year, week_start.month, week_start.day, tzinfo=timezone.utc)
+
+    if request.method == "GET":
+        user_id, guest_sid, err = _actor_resolve()
+        if err:
+            return err
+        if guest_sid and user_id is None:
+            return jsonify(
+                {
+                    "success": True,
+                    "plan": None,
+                    "grocery": None,
+                    "guest_mode": True,
+                    "guest_trial": guest_v3_trial_status(guest_sid),
+                }
+            )
+    else:
+        user_id, err = _auth_guard()
+        if err:
+            return err
 
     if request.method == "GET":
         plan = db.meal_plans.find_one({"user_id": user_id, "week_start": week_start})
