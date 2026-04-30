@@ -78,12 +78,12 @@
 
     {% set show_nav_value %}{% block show_nav %}true{% endblock %}{% endset %}
 
-    <!-- Floating Glass Navigation: fixed ignores document flow, so guest mode offsets top past #guestBanner -->
+    <!-- Sticky Glass Navigation -->
     {% if show_nav_value.strip() != 'false' %}
     <div id="mainNavBar"
-        class="fixed left-0 right-0 z-50 flex justify-center px-3 sm:px-4 {{ 'guest-nav-offset' if guest_browsing else 'top-4' }}">
+        class="sticky top-0 left-0 right-0 z-50 flex justify-center px-3 sm:px-4 pt-2 sm:pt-3 transition-transform duration-200">
         <nav
-            class="glass-pill rounded-2xl lg:rounded-full px-4 sm:px-6 py-3 flex items-center justify-between w-full max-w-7xl transition-all duration-200">
+            class="glass-pill rounded-2xl lg:rounded-full px-3 sm:px-5 py-2 sm:py-2.5 flex items-center justify-between w-full max-w-7xl transition-all duration-200">
 
             <!-- Logo area -->
             <a href="/" class="flex items-center space-x-2 group">
@@ -270,7 +270,7 @@
 
     <!-- Mobile Menu Panel -->
     {% if show_nav_value.strip() != 'false' %}
-    <div id="mobileMenuPanel" class="fixed top-20 left-3 right-3 sm:left-4 sm:right-4 z-40 hidden lg:hidden">
+    <div id="mobileMenuPanel" class="fixed top-[4.5rem] left-3 right-3 sm:left-4 sm:right-4 z-40 hidden lg:hidden transition-transform duration-200">
         <div class="glass-panel rounded-2xl p-3 shadow-xl">
             <div class="grid grid-cols-2 gap-2">
                 <a href="/" class="mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Home</a>
@@ -317,9 +317,9 @@
         </div>
     </div>
 
-    <!-- Main Content (guest: top padding set by syncGuestBannerNav — avoids overlap with banner + fixed nav) -->
+    <!-- Main Content -->
     <main id="mainContent"
-        class="flex-grow {% if show_nav_value.strip() != 'false' %}{% if guest_browsing %}pt-0{% else %}pt-24 sm:pt-28{% endif %}{% else %}pt-4 sm:pt-6{% endif %} pb-12 sm:pb-16 px-2 sm:px-6 lg:px-8">
+        class="flex-grow pt-4 sm:pt-6 pb-12 sm:pb-16 px-2 sm:px-6 lg:px-8">
         {% block content %}{% endblock %}
     </main>
 
@@ -467,6 +467,38 @@
             });
         }
 
+        // Navbar behavior: hide on scroll down, reveal on scroll up.
+        const mainNavBar = document.getElementById('mainNavBar');
+        let lastScrollY = window.scrollY;
+        let navHidden = false;
+        function applyNavVisibility(hidden) {
+            if (!mainNavBar) return;
+            navHidden = hidden;
+            mainNavBar.style.transform = hidden ? 'translateY(calc(-100% - 0.75rem))' : 'translateY(0)';
+            if (mobileMenuPanel && !mobileMenuPanel.classList.contains('hidden')) {
+                mobileMenuPanel.style.transform = hidden ? 'translateY(calc(-100% - 0.75rem))' : 'translateY(0)';
+            } else if (mobileMenuPanel) {
+                mobileMenuPanel.style.transform = '';
+            }
+        }
+        window.addEventListener('scroll', () => {
+            if (!mainNavBar) return;
+            const currentY = window.scrollY;
+            const delta = currentY - lastScrollY;
+            if (currentY <= 10 || delta < -8) {
+                applyNavVisibility(false);
+            } else if (delta > 8 && currentY > 80 && (mobileMenuPanel?.classList.contains('hidden') ?? true)) {
+                applyNavVisibility(true);
+            }
+            lastScrollY = currentY;
+        }, { passive: true });
+        window.addEventListener('resize', () => {
+            if (window.innerWidth < 1024 && !navHidden) {
+                return;
+            }
+            applyNavVisibility(false);
+        });
+
         function setLoginNext(nextPath) {
             if (!loginWithGoogleLink) return;
             const fallback = window.location.pathname || '/';
@@ -505,41 +537,6 @@
             toggleModal(true, qs.get('next') || window.location.pathname);
         }
     </script>
-    {% if guest_browsing and show_nav_value.strip() != 'false' %}
-    <script>
-        (function () {
-            function syncGuestBannerNav() {
-                var b = document.getElementById('guestBanner');
-                var n = document.getElementById('mainNavBar');
-                var m = document.getElementById('mainContent');
-                if (!b || !n || !m) return;
-                var bh = b.offsetHeight;
-                var gap = 10;
-                n.style.top = (bh + gap) + 'px';
-                requestAnimationFrame(function () {
-                    var nh = n.offsetHeight;
-                    m.style.paddingTop = (bh + gap + nh + 16) + 'px';
-                });
-            }
-            function run() {
-                syncGuestBannerNav();
-            }
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', run);
-            } else {
-                run();
-            }
-            var t;
-            window.addEventListener('resize', function () {
-                clearTimeout(t);
-                t = setTimeout(syncGuestBannerNav, 120);
-            });
-            if (document.fonts && document.fonts.ready) {
-                document.fonts.ready.then(syncGuestBannerNav);
-            }
-        })();
-    </script>
-    {% endif %}
     <script src="{{ url_for('static', filename='cta-loading.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>

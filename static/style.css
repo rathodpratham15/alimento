@@ -768,7 +768,7 @@ html {
     }
 }
 
-/* Guest banner + fixed nav: JS sets exact top; fallback if script is delayed */
-#mainNavBar.guest-nav-offset {
-    top: 5rem;
+/* Sticky nav animation hint for mobile show/hide */
+#mainNavBar {
+    will-change: transform;
 }
