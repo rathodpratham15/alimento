@@ -485,9 +485,9 @@
             if (!mainNavBar) return;
             const currentY = window.scrollY;
             const delta = currentY - lastScrollY;
-            if (currentY <= 10 || delta < -8) {
+            if (currentY <= 10 || delta < 0) {
                 applyNavVisibility(false);
-            } else if (delta > 8 && currentY > 80 && (mobileMenuPanel?.classList.contains('hidden') ?? true)) {
+            } else if (delta > 0 && currentY > 80 && (mobileMenuPanel?.classList.contains('hidden') ?? true)) {
                 applyNavVisibility(true);
             }
             lastScrollY = currentY;
