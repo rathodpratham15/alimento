@@ -3,56 +3,59 @@
 {% block title %}Recipes - Alimento{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 space-y-5 sm:space-y-8">
+<div class="max-w-[1280px] mx-auto px-2 sm:px-4 lg:px-6 space-y-5 sm:space-y-8">
+    <!-- Header -->
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
         <div>
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white font-serif-accent">Recipe Library</h1>
-            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">Create diet-aware recipes and add them to your planner.</p>
+            <h1 class="text-2xl sm:text-3xl font-semibold text-text font-display">Recipe Library</h1>
+            <p class="text-sm sm:text-base text-muted">Create diet-aware recipes and add them to your planner.</p>
         </div>
     </div>
 
-    <div id="recipeContextBanner" class="glass-panel rounded-2xl p-4 text-sm text-gray-700 dark:text-gray-300">Loading profile context...</div>
+    <div id="recipeContextBanner" class="card p-4 text-sm text-muted">Loading profile context...</div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        <div class="glass-panel rounded-2xl p-4 sm:p-6 lg:col-span-1 lg:sticky lg:top-24 h-fit">
-            <h2 class="text-lg font-bold mb-4">Add Recipe</h2>
+        <!-- Add Recipe Form -->
+        <div class="card p-4 sm:p-6 lg:col-span-1 lg:sticky lg:top-24 h-fit">
+            <h2 class="text-lg font-semibold mb-4 text-text">Add Recipe</h2>
             <div class="space-y-3">
-                <input id="recipeName" class="input-glass w-full rounded-xl px-3 py-2 text-sm" placeholder="Recipe name">
-                <textarea id="recipeDesc" rows="3" class="input-glass w-full rounded-xl px-3 py-2 text-sm" placeholder="Description"></textarea>
-                <input id="recipeDietTags" class="input-glass w-full rounded-xl px-3 py-2 text-sm" placeholder="Diet tags (comma separated)">
-                <input id="recipeIngredients" class="input-glass w-full rounded-xl px-3 py-2 text-sm" placeholder="Ingredients (comma separated)">
-                <input id="recipeSteps" class="input-glass w-full rounded-xl px-3 py-2 text-sm" placeholder="Steps (semicolon separated)">
-                <input id="recipeServings" class="input-glass w-full rounded-xl px-3 py-2 text-sm" placeholder="Servings (e.g. 2)">
+                <input id="recipeName" class="input" placeholder="Recipe name">
+                <textarea id="recipeDesc" rows="3" class="input resize-none" placeholder="Description"></textarea>
+                <input id="recipeDietTags" class="input" placeholder="Diet tags (comma separated)">
+                <input id="recipeIngredients" class="input" placeholder="Ingredients (comma separated)">
+                <input id="recipeSteps" class="input" placeholder="Steps (semicolon separated)">
+                <input id="recipeServings" class="input" placeholder="Servings (e.g. 2)">
                 <div class="grid grid-cols-2 gap-2">
-                    <input id="recipeCookTime" class="input-glass rounded-xl px-3 py-2 text-sm" placeholder="Cook time min">
-                    <input id="recipeCost" class="input-glass rounded-xl px-3 py-2 text-sm" placeholder="Cost / serving $">
-                    <input id="recipeCalories" class="input-glass rounded-xl px-3 py-2 text-sm" placeholder="Calories">
-                    <input id="recipeProtein" class="input-glass rounded-xl px-3 py-2 text-sm" placeholder="Protein g">
-                    <input id="recipeCarbs" class="input-glass rounded-xl px-3 py-2 text-sm" placeholder="Carbs g">
-                    <input id="recipeFat" class="input-glass rounded-xl px-3 py-2 text-sm" placeholder="Fat g">
+                    <input id="recipeCookTime" class="input" placeholder="Cook time min">
+                    <input id="recipeCost" class="input" placeholder="Cost / serving $">
+                    <input id="recipeCalories" class="input" placeholder="Calories">
+                    <input id="recipeProtein" class="input" placeholder="Protein g">
+                    <input id="recipeCarbs" class="input" placeholder="Carbs g">
+                    <input id="recipeFat" class="input" placeholder="Fat g">
                 </div>
-                <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                    <input type="checkbox" id="recipePublic">
+                <label class="flex items-center gap-2 text-sm text-muted cursor-pointer">
+                    <input type="checkbox" id="recipePublic" class="rounded border-border">
                     <span>Make public</span>
                 </label>
-                <button id="addRecipe" class="btn-primary w-full py-2 rounded-xl font-semibold text-sm">Save Recipe</button>
-                <p id="recipeStatus" class="text-xs text-gray-500"></p>
+                <button id="addRecipe" class="btn btn-primary w-full py-2 font-semibold text-sm">Save Recipe</button>
+                <p id="recipeStatus" class="text-xs text-muted"></p>
             </div>
         </div>
 
-        <div class="lg:col-span-2 glass-panel rounded-2xl p-4 sm:p-6">
+        <!-- Recipe Grid -->
+        <div class="lg:col-span-2 card p-4 sm:p-6">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
-                <h2 class="text-lg font-bold">My + Public Recipes</h2>
+                <h2 class="text-lg font-semibold text-text">My + Public Recipes</h2>
                 <div class="flex flex-wrap items-center gap-2">
-                    <label class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 cursor-pointer select-none">
-                        <input type="checkbox" id="recipeSelectAllMine" class="rounded border-gray-300 dark:border-gray-600">
+                    <label class="flex items-center gap-1.5 text-xs text-muted cursor-pointer select-none">
+                        <input type="checkbox" id="recipeSelectAllMine" class="rounded border-border">
                         <span>Select my recipes</span>
                     </label>
-                    <button type="button" id="bulkDeleteRecipesBtn" class="btn-secondary px-3 py-2 rounded-xl text-xs font-semibold text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/60" disabled>Delete selected</button>
-                    <button id="refreshRecipes" class="btn-secondary px-3 py-2 rounded-xl text-sm">Refresh</button>
+                    <button type="button" id="bulkDeleteRecipesBtn" class="btn btn-ghost text-xs px-3 py-1.5 text-danger border border-danger/30" disabled>Delete selected</button>
+                    <button id="refreshRecipes" class="btn btn-secondary text-sm px-3 py-1.5">Refresh</button>
                 </div>
             </div>
-            <div id="recipeGrid" class="recipe-grid grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4"></div>
+            <div id="recipeGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4"></div>
         </div>
     </div>
 </div>
@@ -74,53 +77,53 @@
     function setRecipeStatus(msg, ok = true) {
         const el = document.getElementById('recipeStatus');
         el.textContent = msg;
-        el.className = `text-xs ${ok ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'}`;
+        el.className = `text-xs ${ok ? 'text-brand' : 'text-danger'}`;
     }
 
     function recipeCard(recipe) {
         const nutrition = recipe.nutrition || {};
-        const tags = (recipe.diet_tags || []).slice(0, 4).map(t => `<span class="recipe-chip">${escapeHtml(t)}</span>`).join('');
-        const extraTags = (recipe.diet_tags || []).length > 4 ? `<span class="recipe-chip">+${(recipe.diet_tags || []).length - 4}</span>` : '';
-        const ingredients = (recipe.ingredients || []).slice(0, 4).map(i => `<span class="recipe-ingredient">${escapeHtml(i)}</span>`).join('');
-        const extraIngredients = (recipe.ingredients || []).length > 4 ? `<span class="recipe-ingredient">+${(recipe.ingredients || []).length - 4} more</span>` : '';
+        const tags = (recipe.diet_tags || []).slice(0, 4).map(t => `<span class="pill pill-brand text-[11px]">${escapeHtml(t)}</span>`).join('');
+        const extraTags = (recipe.diet_tags || []).length > 4 ? `<span class="pill pill-neutral text-[11px]">+${(recipe.diet_tags || []).length - 4}</span>` : '';
+        const ingredients = (recipe.ingredients || []).slice(0, 4).map(i => `<span class="pill pill-neutral text-[11px]">${escapeHtml(i)}</span>`).join('');
+        const extraIngredients = (recipe.ingredients || []).length > 4 ? `<span class="pill pill-neutral text-[11px]">+${(recipe.ingredients || []).length - 4} more</span>` : '';
         const isMine = recipe.user_id === RECIPE_OWNER_ID;
         const ownerBadge = isMine
-            ? '<span class="recipe-origin-badge mine"><i class="ph ph-user"></i> Mine</span>'
-            : '<span class="recipe-origin-badge public"><i class="ph ph-globe-hemisphere-west"></i> Public</span>';
+            ? '<span class="pill pill-success text-[11px]"><i class="ph ph-user"></i> Mine</span>'
+            : '<span class="pill pill-neutral text-[11px]"><i class="ph ph-globe-hemisphere-west"></i> Public</span>';
         const rid = escapeHtml(recipe._id || '');
         const selectMine = isMine
-            ? `<input type="checkbox" class="recipe-select mt-1 rounded border-gray-300 dark:border-gray-600 flex-shrink-0" data-recipe-id="${rid}" title="Select for bulk delete" aria-label="Select recipe">`
+            ? `<input type="checkbox" class="recipe-select mt-1 rounded border-border flex-shrink-0" data-recipe-id="${rid}" title="Select for bulk delete" aria-label="Select recipe">`
             : '';
 
         return `
-            <div class="recipe-card rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-white/50 dark:bg-black/20 h-full flex flex-col">
+            <div class="border border-border rounded-2xl p-4 bg-surface h-full flex flex-col">
                 <div class="flex items-start justify-between gap-2">
                     <div class="flex items-start gap-2 min-w-0 flex-1">
                         ${selectMine}
                         <div class="min-w-0">
-                            <h3 class="font-bold text-gray-900 dark:text-white text-lg leading-tight truncate">${escapeHtml(recipe.name || 'Untitled')}</h3>
+                            <h3 class="font-bold text-text text-lg leading-tight truncate">${escapeHtml(recipe.name || 'Untitled')}</h3>
                             <div class="mt-1">${ownerBadge}</div>
                         </div>
                     </div>
-                    ${isMine ? `<button type="button" onclick="deleteRecipe('${rid}')" class="btn-mini btn-mini-danger recipe-delete-btn" title="Delete recipe"><i class='ph ph-trash'></i></button>` : ''}
+                    ${isMine ? `<button type="button" onclick="deleteRecipe('${rid}')" class="btn btn-ghost btn-icon text-danger hover:bg-danger/10 flex-shrink-0" title="Delete recipe"><i class='ph ph-trash'></i></button>` : ''}
                 </div>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 recipe-desc">${escapeHtml(recipe.description || '')}</p>
+                <p class="text-sm text-muted mt-2 line-clamp-2">${escapeHtml(recipe.description || '')}</p>
 
                 <div class="mt-3 flex flex-wrap gap-1.5">${tags}${extraTags || ''}</div>
 
-                <div class="mt-3 recipe-stats grid grid-cols-2 gap-2">
-                    <div class="recipe-stat"><i class="ph ph-fire"></i><span>${Math.round(nutrition.calories_kcal || 0)} kcal</span></div>
-                    <div class="recipe-stat"><i class="ph ph-bowl-food"></i><span>${Math.round(nutrition.protein_g || 0)}g protein</span></div>
-                    <div class="recipe-stat"><i class="ph ph-grains"></i><span>${Math.round(nutrition.carbs_g || 0)}g carbs</span></div>
-                    <div class="recipe-stat"><i class="ph ph-drop"></i><span>${Math.round(nutrition.fat_g || 0)}g fat</span></div>
-                    <div class="recipe-stat"><i class="ph ph-users-three"></i><span>${recipe.servings || 1} servings</span></div>
-                    <div class="recipe-stat"><i class="ph ph-timer"></i><span>${recipe.cook_time_min || 0} min</span></div>
-                    <div class="recipe-stat col-span-2"><i class="ph ph-currency-dollar"></i><span>$${Number(recipe.cost_per_serving || 0).toFixed(2)} per serving</span></div>
+                <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div class="flex items-center gap-1 text-muted"><i class="ph ph-fire text-warn"></i><span class="tabular">${Math.round(nutrition.calories_kcal || 0)} kcal</span></div>
+                    <div class="flex items-center gap-1 text-muted"><i class="ph ph-bowl-food text-success"></i><span class="tabular">${Math.round(nutrition.protein_g || 0)}g protein</span></div>
+                    <div class="flex items-center gap-1 text-muted"><i class="ph ph-grains text-warn"></i><span class="tabular">${Math.round(nutrition.carbs_g || 0)}g carbs</span></div>
+                    <div class="flex items-center gap-1 text-muted"><i class="ph ph-drop text-rose"></i><span class="tabular">${Math.round(nutrition.fat_g || 0)}g fat</span></div>
+                    <div class="flex items-center gap-1 text-muted"><i class="ph ph-users-three text-muted"></i><span>${recipe.servings || 1} servings</span></div>
+                    <div class="flex items-center gap-1 text-muted"><i class="ph ph-timer text-muted"></i><span>${recipe.cook_time_min || 0} min</span></div>
+                    <div class="col-span-2 flex items-center gap-1 text-muted"><i class="ph ph-currency-dollar text-muted"></i><span>$${Number(recipe.cost_per_serving || 0).toFixed(2)} per serving</span></div>
                 </div>
 
-                <div class="mt-auto pt-3 border-t border-gray-100 dark:border-gray-800">
-                    <p class="text-[11px] uppercase tracking-wide text-gray-500 mb-1">Top Ingredients</p>
-                    <div class="flex flex-wrap gap-1.5">${ingredients || '<span class="recipe-ingredient">No ingredients</span>'}${extraIngredients || ''}</div>
+                <div class="mt-auto pt-3 border-t border-border">
+                    <p class="label-tiny mb-1">Top Ingredients</p>
+                    <div class="flex flex-wrap gap-1.5">${ingredients || '<span class="pill pill-neutral text-[11px]">No ingredients</span>'}${extraIngredients || ''}</div>
                 </div>
             </div>
         `;
@@ -136,9 +139,9 @@
         }
         const missing = data.missing || [];
         if (!missing.length) {
-            el.innerHTML = `<strong class="text-purple-700 dark:text-purple-300">Recipe personalization active.</strong> Filtering uses your diet, allergies, restrictions, prep time, and budget.`;
+            el.innerHTML = `<strong class="text-brand">Recipe personalization active.</strong> Filtering uses your diet, allergies, restrictions, prep time, and budget.`;
         } else {
-            el.innerHTML = `<strong class="text-amber-700 dark:text-amber-300">Personalization partial.</strong> Missing profile fields: ${missing.join(', ')}.`;
+            el.innerHTML = `<strong class="text-warn">Personalization partial.</strong> Missing profile fields: ${missing.join(', ')}.`;
         }
     }
 
@@ -182,7 +185,7 @@
         if (!data.success) return;
         const grid = document.getElementById('recipeGrid');
         if (!data.recipes.length) {
-            grid.innerHTML = '<p class="text-sm text-gray-500">No recipes yet.</p>';
+            grid.innerHTML = '<p class="text-sm text-muted">No recipes yet.</p>';
             syncRecipeBulkUI();
             return;
         }

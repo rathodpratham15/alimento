@@ -3,72 +3,73 @@
 {% block title %}Social Challenges - Alimento{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 space-y-5 sm:space-y-7">
-    <section class="glass-panel rounded-3xl p-4 sm:p-6 border border-white/40 dark:border-white/10 overflow-hidden relative">
-        <div class="absolute -top-20 -right-12 w-52 h-52 bg-purple-300/25 dark:bg-purple-500/20 blur-3xl rounded-full pointer-events-none"></div>
-        <div class="absolute -bottom-20 -left-10 w-44 h-44 bg-cyan-300/20 dark:bg-cyan-500/15 blur-3xl rounded-full pointer-events-none"></div>
+<div class="max-w-[1280px] mx-auto px-2 sm:px-4 lg:px-6 space-y-5 sm:space-y-7">
+
+    <!-- Hero Banner -->
+    <section class="card p-4 sm:p-6 overflow-hidden relative">
         <div class="relative grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div class="lg:col-span-2">
-                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white font-serif-accent">Social Challenges</h1>
-                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-1">Create accountability loops with friends, join active challenges, and climb consistency leaderboards.</p>
+                <h1 class="text-2xl sm:text-3xl font-semibold text-text font-display">Social Challenges</h1>
+                <p class="text-sm sm:text-base text-muted mt-1">Create accountability loops with friends, join active challenges, and climb consistency leaderboards.</p>
             </div>
             <div class="grid grid-cols-3 gap-2 sm:gap-3">
-                <div class="surface-solid rounded-2xl p-3 text-center">
-                    <p id="statActiveChallenges" class="text-lg sm:text-xl font-bold">0</p>
-                    <p class="text-[11px] text-gray-500">Active</p>
+                <div class="bg-surface2 rounded-2xl p-3 text-center border border-border">
+                    <p id="statActiveChallenges" class="text-lg sm:text-xl font-bold tabular text-text">0</p>
+                    <p class="label-tiny">Active</p>
                 </div>
-                <div class="surface-solid rounded-2xl p-3 text-center">
-                    <p id="statJoinedChallenges" class="text-lg sm:text-xl font-bold">0</p>
-                    <p class="text-[11px] text-gray-500">Joined</p>
+                <div class="bg-surface2 rounded-2xl p-3 text-center border border-border">
+                    <p id="statJoinedChallenges" class="text-lg sm:text-xl font-bold tabular text-text">0</p>
+                    <p class="label-tiny">Joined</p>
                 </div>
-                <div class="surface-solid rounded-2xl p-3 text-center">
-                    <p id="statMyChallenges" class="text-lg sm:text-xl font-bold">0</p>
-                    <p class="text-[11px] text-gray-500">Created</p>
+                <div class="bg-surface2 rounded-2xl p-3 text-center border border-border">
+                    <p id="statMyChallenges" class="text-lg sm:text-xl font-bold tabular text-text">0</p>
+                    <p class="label-tiny">Created</p>
                 </div>
             </div>
         </div>
     </section>
 
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+        <!-- Create Challenge Sidebar -->
         <aside class="xl:col-span-1 space-y-3 xl:sticky xl:top-28 self-start">
-            <div class="glass-panel rounded-2xl p-4 sm:p-5 border border-white/30 dark:border-white/10">
+            <div class="card p-4 sm:p-5">
                 <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-base sm:text-lg font-bold">Create Challenge</h2>
+                    <h2 class="text-base sm:text-lg font-semibold text-text">Create Challenge</h2>
                 </div>
 
                 <div class="space-y-3">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Name</label>
-                        <input id="challengeName" class="input-glass w-full rounded-xl px-3 py-2.5 text-sm" placeholder="e.g. 14-Day Consistency Sprint" maxlength="80" />
+                        <label class="label-tiny block mb-1">Name</label>
+                        <input id="challengeName" class="input" placeholder="e.g. 14-Day Consistency Sprint" maxlength="80" />
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Description</label>
-                        <textarea id="challengeDescription" rows="3" class="input-glass w-full rounded-xl px-3 py-2.5 text-sm" placeholder="What are we committing to this week?" maxlength="220"></textarea>
+                        <label class="label-tiny block mb-1">Description</label>
+                        <textarea id="challengeDescription" rows="3" class="input resize-none" placeholder="What are we committing to this week?" maxlength="220"></textarea>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Goal</label>
+                        <label class="label-tiny block mb-1">Goal</label>
                         <div class="relative">
-                            <i class="ph ph-target absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                            <select id="challengeGoal" class="selector-pill w-full pl-9 pr-10 py-2.5 text-sm appearance-none">
+                            <i class="ph ph-target absolute left-3 top-1/2 -translate-y-1/2 text-muted"></i>
+                            <select id="challengeGoal" class="input pl-9 pr-10 appearance-none cursor-pointer">
                                 <option value="meal_logging_streak">Meal logging</option>
                                 <option value="hydration_consistency">Hydration</option>
                                 <option value="nutrition_consistency">Nutrition consistency</option>
                             </select>
-                            <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
+                            <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"></i>
                         </div>
                     </div>
 
                     <div>
                         <div class="flex items-center justify-between mb-1">
-                            <label class="block text-xs font-semibold text-gray-500">Duration</label>
-                            <span id="challengeDurationLabel" class="text-xs font-semibold text-gray-600 dark:text-gray-300">14 days</span>
+                            <label class="label-tiny">Duration</label>
+                            <span id="challengeDurationLabel" class="text-xs font-semibold text-muted">14 days</span>
                         </div>
-                        <input id="challengeDuration" type="range" min="3" max="90" value="14" class="w-full accent-purple-500" />
+                        <input id="challengeDuration" type="range" min="3" max="90" value="14" class="w-full accent-brand" />
                     </div>
 
-                    <button id="createChallenge" class="btn-primary w-full py-2.5 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2">
+                    <button id="createChallenge" class="btn btn-primary w-full py-2.5 text-sm font-semibold inline-flex items-center justify-center gap-2">
                         <i class="ph ph-plus"></i>
                         <span>Create Challenge</span>
                     </button>
@@ -78,25 +79,26 @@
             </div>
         </aside>
 
-        <section class="xl:col-span-2 glass-panel rounded-2xl p-4 sm:p-5 border border-white/30 dark:border-white/10">
+        <!-- Active Challenges -->
+        <section class="xl:col-span-2 card p-4 sm:p-5">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-                <h2 class="text-base sm:text-lg font-bold">Active Challenges</h2>
-                <div class="control-strip w-full md:w-auto flex-wrap">
+                <h2 class="text-base sm:text-lg font-semibold text-text">Active Challenges</h2>
+                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
                     <div class="relative flex-1 min-w-[12rem]">
-                        <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input id="challengeSearch" class="selector-pill rounded-xl pl-9 pr-3 py-2 text-sm w-full" placeholder="Search challenge" />
+                        <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-muted"></i>
+                        <input id="challengeSearch" class="input pl-9" placeholder="Search challenge" />
                     </div>
                     <div class="relative min-w-[11rem]">
-                        <i class="ph ph-funnel absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                        <select id="challengeGoalFilter" class="selector-pill w-full pl-9 pr-10 py-2 text-sm appearance-none">
+                        <i class="ph ph-funnel absolute left-3 top-1/2 -translate-y-1/2 text-muted"></i>
+                        <select id="challengeGoalFilter" class="input pl-9 pr-10 appearance-none cursor-pointer">
                             <option value="all">All goals</option>
                             <option value="meal_logging_streak">Meal logging</option>
                             <option value="hydration_consistency">Hydration</option>
                             <option value="nutrition_consistency">Nutrition consistency</option>
                         </select>
-                        <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
+                        <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"></i>
                     </div>
-                    <button id="refreshChallenges" class="btn-secondary px-3 py-2 rounded-xl text-sm inline-flex items-center justify-center gap-1.5 min-w-[6.75rem]">
+                    <button id="refreshChallenges" class="btn btn-secondary px-3 py-2 text-sm inline-flex items-center justify-center gap-1.5">
                         <i class="ph ph-arrows-clockwise"></i>
                         <span>Refresh</span>
                     </button>
@@ -107,13 +109,14 @@
         </section>
     </div>
 
-    <section class="glass-panel rounded-2xl p-4 sm:p-6 border border-white/30 dark:border-white/10">
+    <!-- Leaderboard -->
+    <section class="card p-4 sm:p-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
             <div>
-                <h2 class="text-base sm:text-lg font-bold">Leaderboard</h2>
-                <p id="leaderboardLabel" class="text-sm text-gray-500">Pick a challenge to see rankings</p>
+                <h2 class="text-base sm:text-lg font-semibold text-text">Leaderboard</h2>
+                <p id="leaderboardLabel" class="text-sm text-muted">Pick a challenge to see rankings</p>
             </div>
-            <span id="leaderboardGoal" class="chip-toggle text-xs hidden"></span>
+            <span id="leaderboardGoal" class="pill pill-brand hidden"></span>
         </div>
         <div id="leaderboardList" class="space-y-2"></div>
     </section>
@@ -149,7 +152,7 @@
             return;
         }
         el.textContent = msg;
-        el.className = `text-xs ${ok ? 'text-purple-600 dark:text-purple-300' : 'text-red-600 dark:text-red-400'}`;
+        el.className = `text-xs ${ok ? 'text-brand' : 'text-danger'}`;
     }
 
     function updateDurationLabel() {
@@ -178,7 +181,7 @@
         });
 
         if (!items.length) {
-            list.innerHTML = '<div class="surface-solid rounded-2xl p-5 text-sm text-gray-500">No challenges match your filters.</div>';
+            list.innerHTML = '<div class="bg-surface2 rounded-2xl p-5 text-sm text-muted border border-border">No challenges match your filters.</div>';
             return;
         }
 
@@ -188,37 +191,37 @@
             const progressPct = Number(c.your_progress_pct || 0);
 
             return `
-                <article class="surface-solid rounded-2xl p-4 border ${selected ? 'border-purple-400/70' : 'border-transparent'} transition-colors">
+                <article class="bg-surface2 rounded-2xl p-4 border ${selected ? 'border-brand' : 'border-border'} transition-colors">
                     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div class="space-y-2">
                             <div class="flex flex-wrap items-center gap-2">
-                                <h3 class="font-bold text-gray-900 dark:text-white">${escapeHtml(c.name || 'Challenge')}</h3>
-                                <span class="chip-toggle text-[11px]">${escapeHtml(c.goal_label || 'Goal')}</span>
-                                ${c.joined ? '<span class="chip-toggle chip-toggle-active text-[11px]">Joined</span>' : ''}
-                                ${c.is_created_by_you ? '<span class="chip-toggle text-[11px]">Created by you</span>' : ''}
+                                <h3 class="font-bold text-text">${escapeHtml(c.name || 'Challenge')}</h3>
+                                <span class="pill pill-neutral text-[11px]">${escapeHtml(c.goal_label || 'Goal')}</span>
+                                ${c.joined ? '<span class="pill pill-brand text-[11px]">Joined</span>' : ''}
+                                ${c.is_created_by_you ? '<span class="pill pill-neutral text-[11px]">Created by you</span>' : ''}
                             </div>
-                            <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">${escapeHtml(c.description || '')}</p>
-                            <div class="flex flex-wrap gap-3 text-xs text-gray-500">
+                            <p class="text-sm text-muted leading-relaxed">${escapeHtml(c.description || '')}</p>
+                            <div class="flex flex-wrap gap-3 text-xs text-muted">
                                 <span><i class="ph ph-users-three"></i> ${Number(c.participant_count || 0)} participants</span>
                                 <span><i class="ph ph-calendar"></i> ${formatDate(c.start_at)} - ${formatDate(c.end_at)}</span>
                                 <span><i class="ph ph-clock"></i> ${Number(c.duration_days || 0)} days</span>
                                 <span><i class="ph ph-user"></i> ${escapeHtml(c.created_by_name || 'Community')}</span>
                             </div>
                             <div>
-                                <div class="flex items-center justify-between text-[11px] text-gray-500 mb-1">
+                                <div class="flex items-center justify-between text-[11px] text-muted mb-1">
                                     <span>Your progress</span>
                                     <span>${escapeHtml(yourProgress)}</span>
                                 </div>
-                                <div class="h-1.5 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
-                                    <div class="h-full bg-purple-500 transition-all" style="width:${Math.max(0, Math.min(100, progressPct))}%"></div>
+                                <div class="macro-track">
+                                    <div class="macro-fill bg-brand" style="width:${Math.max(0, Math.min(100, progressPct))}%"></div>
                                 </div>
                             </div>
                         </div>
                         <div class="flex gap-2 sm:flex-col sm:w-36">
-                            <button class="btn-secondary rounded-xl py-2 text-xs font-semibold challenge-action flex-1" data-action="leaderboard" data-id="${escapeHtml(c._id)}">View board</button>
+                            <button class="btn btn-secondary text-xs font-semibold challenge-action flex-1 py-2" data-action="leaderboard" data-id="${escapeHtml(c._id)}">View board</button>
                             ${c.joined
-                                ? `<button type="button" class="btn-secondary rounded-xl py-2 text-xs font-semibold challenge-action flex-1 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30" data-action="leave" data-id="${escapeHtml(c._id)}">Leave</button>`
-                                : `<button class="btn-primary rounded-xl py-2 text-xs font-semibold challenge-action flex-1" data-action="join" data-id="${escapeHtml(c._id)}">Join</button>`}
+                                ? `<button type="button" class="btn btn-ghost text-xs font-semibold challenge-action flex-1 py-2 text-danger border border-danger/30" data-action="leave" data-id="${escapeHtml(c._id)}">Leave</button>`
+                                : `<button class="btn btn-primary text-xs font-semibold challenge-action flex-1 py-2" data-action="join" data-id="${escapeHtml(c._id)}">Join</button>`}
                         </div>
                     </div>
                 </article>
@@ -244,7 +247,7 @@
             goalChip.classList.add('hidden');
             goalChip.textContent = '';
             document.getElementById('leaderboardList').innerHTML =
-                '<div class="surface-solid rounded-2xl p-4 text-sm text-gray-500">No active challenges yet.</div>';
+                '<div class="bg-surface2 rounded-2xl p-4 text-sm text-muted border border-border">No active challenges yet.</div>';
             return;
         }
 
@@ -347,42 +350,42 @@
         const data = await res.json();
         const list = document.getElementById('leaderboardList');
         if (!data.success) {
-            list.innerHTML = '<div class="surface-solid rounded-2xl p-4 text-sm text-red-500">Could not load leaderboard.</div>';
+            list.innerHTML = '<div class="bg-surface2 rounded-2xl p-4 text-sm text-danger border border-border">Could not load leaderboard.</div>';
             return;
         }
 
         const rows = data.leaderboard || [];
         if (!rows.length) {
-            list.innerHTML = '<div class="surface-solid rounded-2xl p-4 text-sm text-gray-500">No members yet.</div>';
+            list.innerHTML = '<div class="bg-surface2 rounded-2xl p-4 text-sm text-muted border border-border">No members yet.</div>';
             return;
         }
 
         list.innerHTML = rows.map((row) => {
-            const topThreeStyle = row.rank === 1
-                ? 'bg-amber-50/80 border-amber-300/60 dark:bg-amber-900/20'
+            const topStyle = row.rank === 1
+                ? 'bg-warn/10 border-warn/30'
                 : row.rank === 2
-                    ? 'bg-slate-50/80 border-slate-300/60 dark:bg-slate-800/35'
+                    ? 'bg-surface2 border-border'
                     : row.rank === 3
-                        ? 'bg-orange-50/80 border-orange-300/60 dark:bg-orange-900/20'
-                        : (row.is_you ? 'bg-purple-50/70 border-purple-300/60 dark:bg-purple-900/20' : 'surface-solid border-transparent');
+                        ? 'bg-surface2 border-border'
+                        : (row.is_you ? 'bg-brand-tint/40 border-brand/30' : 'bg-surface2 border-border');
 
             const avatar = row.picture
-                ? `<img src="${escapeHtml(row.picture)}" alt="${escapeHtml(row.name)}" class="w-9 h-9 rounded-full object-cover border border-white/70">`
-                : `<div class="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold text-xs">${escapeHtml((row.name || 'U').slice(0, 1).toUpperCase())}</div>`;
+                ? `<img src="${escapeHtml(row.picture)}" alt="${escapeHtml(row.name)}" class="w-9 h-9 rounded-full object-cover border border-border">`
+                : `<div class="w-9 h-9 rounded-full bg-brand-tint text-brand-ink dark:text-brand flex items-center justify-center font-bold text-xs">${escapeHtml((row.name || 'U').slice(0, 1).toUpperCase())}</div>`;
 
             return `
-                <div class="rounded-2xl border p-3 sm:p-3.5 flex items-center justify-between ${topThreeStyle}">
+                <div class="rounded-2xl border p-3 sm:p-3.5 flex items-center justify-between ${topStyle}">
                     <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-7 text-center font-bold text-sm">${row.rank}</div>
+                        <div class="w-7 text-center font-bold text-sm tabular text-text">${row.rank}</div>
                         ${avatar}
                         <div class="min-w-0">
-                            <p class="font-semibold text-sm truncate">${escapeHtml(row.name)}${row.is_you ? ' <span class="text-purple-600 dark:text-purple-300">(You)</span>' : ''}</p>
-                            <p class="text-xs text-gray-500">${escapeHtml(row.goal_label || 'Consistency')}</p>
+                            <p class="font-semibold text-sm truncate text-text">${escapeHtml(row.name)}${row.is_you ? ' <span class="text-brand">(You)</span>' : ''}</p>
+                            <p class="text-xs text-muted">${escapeHtml(row.goal_label || 'Consistency')}</p>
                         </div>
                     </div>
                     <div class="text-right">
-                        <p class="font-bold text-base leading-tight">${Number(row.score || 0)}</p>
-                        <p class="text-xs text-gray-500">${escapeHtml(row.goal_unit || 'days')}</p>
+                        <p class="font-bold text-base leading-tight tabular text-text">${Number(row.score || 0)}</p>
+                        <p class="text-xs text-muted">${escapeHtml(row.goal_unit || 'days')}</p>
                     </div>
                 </div>
             `;
