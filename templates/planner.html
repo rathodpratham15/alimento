@@ -3,161 +3,169 @@
 {% block title %}Meal Planner - Alimento{% endblock %}
 
 {% block content %}
-<div class="planner-page relative z-20 max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 space-y-5 sm:space-y-8">
+<div class="planner-page relative z-20 max-w-[1280px] mx-auto px-2 sm:px-4 lg:px-6 space-y-5 sm:space-y-8">
+    <!-- Header -->
     <div class="relative z-[90] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
         <div>
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white font-serif-accent">Weekly Planner</h1>
-            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">Plan meals, auto-build grocery list, and log meals quickly.</p>
+            <h1 class="text-2xl sm:text-3xl font-semibold text-text font-display">Weekly Planner</h1>
+            <p class="text-sm sm:text-base text-muted">Plan meals, auto-build grocery list, and log meals quickly.</p>
         </div>
-        <div class="control-strip flex-wrap w-full lg:w-auto relative z-[95]">
-            <button id="prevWeek" class="icon-btn" aria-label="Previous week"><i class="ph ph-caret-left"></i></button>
-            <button id="weekStartToggle" class="selector-pill flex-1 min-w-[12rem] px-3 py-2 text-sm inline-flex items-center justify-between">
+        <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto relative z-[95]">
+            <button id="prevWeek" class="btn btn-ghost btn-icon" aria-label="Previous week"><i class="ph ph-caret-left"></i></button>
+            <button id="weekStartToggle" class="btn btn-ghost flex-1 min-w-[12rem] px-3 py-2 text-sm inline-flex items-center justify-between border border-border rounded-xl">
                 <span id="weekStartLabel" class="truncate">Select week</span>
-                <i class="ph ph-calendar-blank text-gray-500"></i>
+                <i class="ph ph-calendar-blank text-muted"></i>
             </button>
             <input id="weekStart" type="date" class="sr-only" aria-hidden="true" tabindex="-1">
-            <button id="nextWeek" class="icon-btn" aria-label="Next week"><i class="ph ph-caret-right"></i></button>
-            <button id="loadWeek" class="btn-secondary px-3 sm:px-4 py-2 rounded-xl text-sm font-medium">Load</button>
-            <button id="generatePlan" class="btn-primary px-3 sm:px-4 py-2 rounded-xl text-sm font-bold">Generate</button>
+            <button id="nextWeek" class="btn btn-ghost btn-icon" aria-label="Next week"><i class="ph ph-caret-right"></i></button>
+            <button id="loadWeek" class="btn btn-secondary px-3 sm:px-4 py-2 text-sm font-medium">Load</button>
+            <button id="generatePlan" class="btn btn-primary px-3 sm:px-4 py-2 text-sm font-bold">Generate</button>
 
-            <div id="weekStartPanel" class="hidden absolute top-12 left-0 sm:left-auto sm:right-0 z-[520] w-[19.5rem] surface-solid rounded-2xl p-3 shadow-2xl">
+            <div id="weekStartPanel" class="hidden absolute top-12 left-0 sm:left-auto sm:right-0 z-[520] w-[19.5rem] card p-3">
                 <div class="flex items-center justify-between mb-2">
-                    <button id="weekMonthPrev" class="icon-btn h-8 w-8"><i class="ph ph-caret-left"></i></button>
+                    <button id="weekMonthPrev" class="btn btn-ghost btn-icon h-8 w-8"><i class="ph ph-caret-left"></i></button>
                     <p id="weekMonthLabel" class="text-sm font-semibold"></p>
-                    <button id="weekMonthNext" class="icon-btn h-8 w-8"><i class="ph ph-caret-right"></i></button>
+                    <button id="weekMonthNext" class="btn btn-ghost btn-icon h-8 w-8"><i class="ph ph-caret-right"></i></button>
                 </div>
-                <div class="grid grid-cols-7 text-[11px] text-gray-500 mb-1 px-1">
+                <div class="grid grid-cols-7 text-[11px] text-muted mb-1 px-1">
                     <span class="text-center">S</span><span class="text-center">M</span><span class="text-center">T</span>
                     <span class="text-center">W</span><span class="text-center">T</span><span class="text-center">F</span><span class="text-center">S</span>
                 </div>
                 <div id="weekMonthGrid" class="grid grid-cols-7 gap-1"></div>
-                <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <button id="weekTodayQuick" class="btn-mini btn-mini-primary">This Week</button>
-                    <button id="weekOpenNative" class="btn-mini btn-mini-secondary">Use picker</button>
+                <div class="flex items-center justify-between mt-2 pt-2 border-t border-border">
+                    <button id="weekTodayQuick" class="btn btn-secondary text-xs px-3 py-1">This Week</button>
+                    <button id="weekOpenNative" class="btn btn-ghost text-xs px-3 py-1">Use picker</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="contextBanner" class="glass-panel rounded-2xl p-4 text-sm text-gray-700 dark:text-gray-300">
+    <div id="contextBanner" class="card p-4 text-sm text-muted">
         Loading your profile context...
     </div>
-    <p id="planMeta" class="text-xs text-gray-500 px-1"></p>
+    <p id="planMeta" class="text-xs text-muted px-1"></p>
 
     <div class="relative z-30 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        <div class="order-2 lg:order-1 lg:col-span-2 glass-panel rounded-2xl p-4 sm:p-6 relative z-10">
+        <!-- Plan Editor -->
+        <div class="order-2 lg:order-1 lg:col-span-2 card p-4 sm:p-6 relative z-10">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Plan Editor</h2>
-                <button id="savePlan" class="btn-primary px-4 py-2 rounded-lg text-sm font-semibold">Save Week</button>
+                <h2 class="text-lg font-semibold text-text">Plan Editor</h2>
+                <button id="savePlan" class="btn btn-primary px-4 py-2 text-sm font-semibold">Save Week</button>
             </div>
             <div id="planContainer" class="space-y-4"></div>
         </div>
+
+        <!-- Right Column -->
         <div class="order-1 lg:order-2 space-y-4 sm:space-y-6">
-            <div class="glass-panel rounded-2xl p-4 sm:p-6 relative z-20">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3">Quick Meal Log</h2>
+            <!-- Quick Meal Log -->
+            <div class="card p-4 sm:p-6 relative z-20">
+                <h2 class="text-lg font-semibold text-text mb-3">Quick Meal Log</h2>
                 <div class="flex flex-wrap gap-2 mb-4 text-xs">
-                    <button data-log-tab="text" class="log-tab chip-toggle chip-toggle-active">Text</button>
-                    <button data-log-tab="barcode" class="log-tab chip-toggle">Barcode</button>
-                    <button data-log-tab="manual" class="log-tab chip-toggle">Manual</button>
-                    <button data-log-tab="image" class="log-tab chip-toggle">Image URL</button>
+                    <button data-log-tab="text" class="log-tab pill pill-brand cursor-pointer">Text</button>
+                    <button data-log-tab="barcode" class="log-tab pill pill-neutral cursor-pointer">Barcode</button>
+                    <button data-log-tab="manual" class="log-tab pill pill-neutral cursor-pointer">Manual</button>
+                    <button data-log-tab="image" class="log-tab pill pill-neutral cursor-pointer">Image URL</button>
                 </div>
 
                 <div id="tab-text" class="log-pane space-y-3">
-                    <textarea id="textInput" rows="3" class="input-glass w-full rounded-xl px-3 py-2 text-sm"
+                    <textarea id="textInput" rows="3" class="input"
                         placeholder="Example: Grilled chicken bowl with rice and broccoli"></textarea>
-                    <button type="button" id="logTextMealBtn" onclick="submitTextLog(this)" class="btn-primary w-full py-2 rounded-lg text-sm font-semibold">Log Text Meal</button>
+                    <button type="button" id="logTextMealBtn" onclick="submitTextLog(this)" class="btn btn-primary w-full py-2 text-sm font-semibold">Log Text Meal</button>
                 </div>
 
                 <div id="tab-barcode" class="log-pane hidden space-y-3">
-                    <input id="barcodeInput" class="input-glass w-full rounded-xl px-3 py-2 text-sm" placeholder="Enter barcode">
-                    <button type="button" id="scanBarcodeBtn" class="btn-secondary w-full py-2 rounded-lg text-sm font-semibold inline-flex items-center justify-center gap-2">
+                    <input id="barcodeInput" class="input" placeholder="Enter barcode">
+                    <button type="button" id="scanBarcodeBtn" class="btn btn-secondary w-full py-2 text-sm font-semibold inline-flex items-center justify-center gap-2">
                         <i class="ph ph-camera"></i>
                         <span>Scan Barcode</span>
                     </button>
-                    <input id="barcodeServings" type="number" step="0.1" value="1" class="input-glass w-full rounded-xl px-3 py-2 text-sm" placeholder="Servings">
-                    <button type="button" id="logBarcodeMealBtn" onclick="submitBarcodeLog(this)" class="btn-primary w-full py-2 rounded-lg text-sm font-semibold">Log Barcode Meal</button>
+                    <input id="barcodeServings" type="number" step="0.1" value="1" class="input" placeholder="Servings">
+                    <button type="button" id="logBarcodeMealBtn" onclick="submitBarcodeLog(this)" class="btn btn-primary w-full py-2 text-sm font-semibold">Log Barcode Meal</button>
                 </div>
 
                 <div id="tab-manual" class="log-pane hidden grid grid-cols-2 gap-2">
-                    <input id="manualName" class="input-glass rounded-xl px-3 py-2 text-sm col-span-2" placeholder="Meal name">
-                    <input id="manualCal" class="input-glass rounded-xl px-3 py-2 text-sm" placeholder="Calories">
-                    <input id="manualPro" class="input-glass rounded-xl px-3 py-2 text-sm" placeholder="Protein g">
-                    <input id="manualCarb" class="input-glass rounded-xl px-3 py-2 text-sm" placeholder="Carbs g">
-                    <input id="manualFat" class="input-glass rounded-xl px-3 py-2 text-sm" placeholder="Fat g">
-                    <button type="button" id="logManualMealBtn" onclick="submitManualLog(this)" class="btn-primary col-span-2 py-2 rounded-lg text-sm font-semibold">Log Manual Meal</button>
+                    <input id="manualName" class="input col-span-2" placeholder="Meal name">
+                    <input id="manualCal" class="input" placeholder="Calories">
+                    <input id="manualPro" class="input" placeholder="Protein g">
+                    <input id="manualCarb" class="input" placeholder="Carbs g">
+                    <input id="manualFat" class="input" placeholder="Fat g">
+                    <button type="button" id="logManualMealBtn" onclick="submitManualLog(this)" class="btn btn-primary col-span-2 py-2 text-sm font-semibold">Log Manual Meal</button>
                 </div>
 
                 <div id="tab-image" class="log-pane hidden space-y-3">
-                    <input id="imageUrlInput" class="input-glass w-full rounded-xl px-3 py-2 text-sm" placeholder="https://...">
-                    <button type="button" id="logImageMealBtn" onclick="submitImageLog(this)" class="btn-primary w-full py-2 rounded-lg text-sm font-semibold">Analyze + Log Image</button>
+                    <input id="imageUrlInput" class="input" placeholder="https://...">
+                    <button type="button" id="logImageMealBtn" onclick="submitImageLog(this)" class="btn btn-primary w-full py-2 text-sm font-semibold">Analyze + Log Image</button>
                 </div>
-                <p id="logStatus" class="text-xs text-gray-500 mt-3"></p>
+                <p id="logStatus" class="text-xs text-muted mt-3"></p>
             </div>
 
-            <div class="glass-panel rounded-2xl p-4 sm:p-6 relative z-[300] overflow-visible">
+            <!-- Daily Meal Timeline -->
+            <div class="card p-4 sm:p-6 relative z-[300] overflow-visible">
                 <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-lg font-bold text-gray-900 dark:text-white">Daily Meal Timeline</h2>
-                    <span id="tzBadge" class="text-[11px] px-2 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300"></span>
+                    <h2 class="text-lg font-semibold text-text">Daily Meal Timeline</h2>
+                    <span id="tzBadge" class="pill pill-neutral text-[11px]"></span>
                 </div>
-                <div class="control-strip mb-3 relative z-[110]">
-                    <button id="prevDay" class="icon-btn"><i class="ph ph-caret-left"></i></button>
-                    <button id="dailyDateToggle" class="selector-pill flex-1 px-3 py-2 text-sm inline-flex items-center justify-between">
+                <div class="flex flex-wrap items-center gap-2 mb-3 relative z-[110]">
+                    <button id="prevDay" class="btn btn-ghost btn-icon"><i class="ph ph-caret-left"></i></button>
+                    <button id="dailyDateToggle" class="btn btn-ghost flex-1 px-3 py-2 text-sm inline-flex items-center justify-between border border-border rounded-xl">
                         <span id="dailyDateLabel" class="truncate">Select day</span>
-                        <i class="ph ph-calendar-blank text-gray-500"></i>
+                        <i class="ph ph-calendar-blank text-muted"></i>
                     </button>
                     <input id="dailyDate" type="date" class="sr-only" aria-hidden="true" tabindex="-1">
-                    <button id="nextDay" class="icon-btn"><i class="ph ph-caret-right"></i></button>
-                    <button id="todayDay" class="today-chip">Today</button>
+                    <button id="nextDay" class="btn btn-ghost btn-icon"><i class="ph ph-caret-right"></i></button>
+                    <button id="todayDay" class="btn btn-secondary text-xs px-3 py-1">Today</button>
 
-                    <div id="dailyDatePanel" class="hidden absolute top-12 left-0 sm:left-auto sm:right-0 z-[520] w-[19.5rem] surface-solid rounded-2xl p-3 shadow-2xl">
+                    <div id="dailyDatePanel" class="hidden absolute top-12 left-0 sm:left-auto sm:right-0 z-[520] w-[19.5rem] card p-3">
                         <div class="flex items-center justify-between mb-2">
-                            <button id="dailyMonthPrev" class="icon-btn h-8 w-8"><i class="ph ph-caret-left"></i></button>
+                            <button id="dailyMonthPrev" class="btn btn-ghost btn-icon h-8 w-8"><i class="ph ph-caret-left"></i></button>
                             <p id="dailyMonthLabel" class="text-sm font-semibold"></p>
-                            <button id="dailyMonthNext" class="icon-btn h-8 w-8"><i class="ph ph-caret-right"></i></button>
+                            <button id="dailyMonthNext" class="btn btn-ghost btn-icon h-8 w-8"><i class="ph ph-caret-right"></i></button>
                         </div>
-                        <div class="grid grid-cols-7 text-[11px] text-gray-500 mb-1 px-1">
+                        <div class="grid grid-cols-7 text-[11px] text-muted mb-1 px-1">
                             <span class="text-center">S</span><span class="text-center">M</span><span class="text-center">T</span>
                             <span class="text-center">W</span><span class="text-center">T</span><span class="text-center">F</span><span class="text-center">S</span>
                         </div>
                         <div id="dailyMonthGrid" class="grid grid-cols-7 gap-1"></div>
-                        <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                            <button id="dailyTodayQuick" class="btn-mini btn-mini-primary">Jump to Today</button>
-                            <button id="dailyOpenNative" class="btn-mini btn-mini-secondary">Use picker</button>
+                        <div class="flex items-center justify-between mt-2 pt-2 border-t border-border">
+                            <button id="dailyTodayQuick" class="btn btn-secondary text-xs px-3 py-1">Jump to Today</button>
+                            <button id="dailyOpenNative" class="btn btn-ghost text-xs px-3 py-1">Use picker</button>
                         </div>
                     </div>
                 </div>
-                <div id="dailyTotals" class="text-xs text-gray-600 dark:text-gray-300 mb-2"></div>
+                <div id="dailyTotals" class="text-xs text-muted mb-2"></div>
                 <div id="dailyMealsList" class="space-y-2 text-sm max-h-64 overflow-auto pr-1"></div>
             </div>
 
-            <div class="glass-panel rounded-2xl p-4 sm:p-6 relative z-0">
-                <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-black/20 px-3 py-2 mb-3 flex items-center justify-between">
+            <!-- Grocery List -->
+            <div class="card p-4 sm:p-6 relative z-0">
+                <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2">
-                        <i class="ph ph-shopping-cart text-purple-600 dark:text-purple-400"></i>
-                        <h2 class="text-sm font-bold text-gray-900 dark:text-white">Grocery List</h2>
+                        <i class="ph ph-shopping-cart text-brand"></i>
+                        <h2 class="text-sm font-bold text-text">Grocery List</h2>
                     </div>
-                    <span id="groceryCountBadge" class="text-[11px] px-2 py-1 rounded-full bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300">0 items</span>
+                    <span id="groceryCountBadge" class="pill pill-neutral text-[11px]">0 items</span>
                 </div>
-                <div id="groceryContainer" class="space-y-2 text-sm text-gray-700 dark:text-gray-300 max-h-80 overflow-auto pr-1"></div>
+                <div id="groceryContainer" class="space-y-2 text-sm text-text max-h-80 overflow-auto pr-1"></div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Barcode Scanner Modal -->
 <div id="barcodeScannerModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-[1200] p-4">
-    <div class="w-full max-w-lg rounded-2xl bg-gray-950 border border-white/10 shadow-2xl overflow-hidden">
-        <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
-            <h3 class="text-base font-semibold text-white">Scan Barcode</h3>
-            <button type="button" id="closeBarcodeScannerBtn" class="icon-btn h-8 w-8 text-white/80 hover:text-white" aria-label="Close scanner">
+    <div class="w-full max-w-lg rounded-2xl bg-surface border border-border shadow-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-border">
+            <h3 class="text-base font-semibold text-text">Scan Barcode</h3>
+            <button type="button" id="closeBarcodeScannerBtn" class="btn btn-ghost btn-icon" aria-label="Close scanner">
                 <i class="ph ph-x"></i>
             </button>
         </div>
         <div class="p-4 space-y-3">
-            <div class="rounded-xl overflow-hidden border border-white/10 bg-black">
+            <div class="rounded-xl overflow-hidden border border-border bg-black">
                 <video id="barcodeScannerVideo" class="w-full h-64 object-cover" autoplay playsinline muted></video>
             </div>
-            <p id="barcodeScannerStatus" class="text-xs text-gray-300">Align the barcode inside the camera frame.</p>
-            <button type="button" id="cancelBarcodeScannerBtn" class="btn-secondary w-full py-2 rounded-lg text-sm font-semibold">Cancel</button>
+            <p id="barcodeScannerStatus" class="text-xs text-muted">Align the barcode inside the camera frame.</p>
+            <button type="button" id="cancelBarcodeScannerBtn" class="btn btn-secondary w-full py-2 text-sm font-semibold">Cancel</button>
         </div>
     </div>
 </div>
@@ -179,7 +187,7 @@
     function showLogStatus(text, ok = true) {
         const el = document.getElementById('logStatus');
         el.textContent = text;
-        el.className = `text-xs mt-3 ${ok ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400'}`;
+        el.className = `text-xs mt-3 ${ok ? 'text-brand' : 'text-danger'}`;
     }
 
     function mealLogApiMessage(data) {
@@ -278,10 +286,10 @@
                 const allowed = inRange(key);
                 const base = 'h-8 w-8 rounded-lg text-xs font-semibold transition-colors';
                 const state = isSelected
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-brand text-white'
                     : isToday
-                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-                        : 'hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300';
+                        ? 'bg-brand-tint text-brand-ink dark:text-brand'
+                        : 'hover:bg-surface2 text-text';
 
                 if (!allowed) {
                     cells.push(`<button class="${base} opacity-40 cursor-not-allowed" disabled>${day}</button>`);
@@ -367,17 +375,17 @@
 
         const list = document.getElementById('dailyMealsList');
         if (!data.meals || !data.meals.length) {
-            list.innerHTML = '<p class="text-sm text-gray-500">No meals logged for this day.</p>';
+            list.innerHTML = '<p class="text-sm text-muted">No meals logged for this day.</p>';
             return;
         }
         list.innerHTML = data.meals.map(m => `
-            <div class="rounded-lg border border-gray-100 dark:border-gray-800 p-2 bg-white/40 dark:bg-black/20">
+            <div class="rounded-xl border border-border p-2 bg-surface2">
                 <div class="flex items-center justify-between gap-2">
-                    <p class="font-medium text-gray-900 dark:text-gray-100 text-sm">${m.meal_name || 'Meal'}</p>
-                    <span class="text-[11px] text-gray-500">${m.local_time || ''}</span>
+                    <p class="font-medium text-text text-sm">${m.meal_name || 'Meal'}</p>
+                    <span class="text-[11px] text-muted">${m.local_time || ''}</span>
                 </div>
-                <p class="text-[11px] text-gray-500 uppercase tracking-wide mt-0.5">${m.source || 'manual'} • ${m.meal_type || 'unspecified'}</p>
-                <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">${Math.round(m.macros?.calories_kcal || 0)} kcal • ${Math.round(m.macros?.protein_g || 0)}p / ${Math.round(m.macros?.carbs_g || 0)}c / ${Math.round(m.macros?.fat_g || 0)}f</p>
+                <p class="text-[11px] text-muted uppercase tracking-wide mt-0.5">${m.source || 'manual'} • ${m.meal_type || 'unspecified'}</p>
+                <p class="text-xs text-muted mt-1">${Math.round(m.macros?.calories_kcal || 0)} kcal • ${Math.round(m.macros?.protein_g || 0)}p / ${Math.round(m.macros?.carbs_g || 0)}c / ${Math.round(m.macros?.fat_g || 0)}f</p>
             </div>
         `).join('');
     }
@@ -387,7 +395,7 @@
         const res = await fetch(`/api/v3/meals/by-date?date=${date}&tz=${encodeURIComponent(userTz)}`);
         const data = await res.json();
         if (!data.success) {
-            document.getElementById('dailyMealsList').innerHTML = '<p class="text-sm text-red-500">Could not load daily meals.</p>';
+            document.getElementById('dailyMealsList').innerHTML = '<p class="text-sm text-danger">Could not load daily meals.</p>';
             return;
         }
         renderDayMeals(data);
@@ -406,7 +414,7 @@
         if (data.guest_mode) {
             const gt = data.guest_trial || {};
             const rem = gt.remaining != null ? gt.remaining : 3;
-            el.innerHTML = `<strong class="text-amber-800 dark:text-amber-200">Guest trial:</strong> ${rem} of ${gt.limit || 3} free meal logs left. <a href="/login" class="underline font-semibold">Sign in</a> to save your plan and use AI generation.`;
+            el.innerHTML = `<strong class="text-warn">Guest trial:</strong> ${rem} of ${gt.limit || 3} free meal logs left. <a href="/login" class="underline font-semibold text-text">Sign in</a> to save your plan and use AI generation.`;
             generateBtn.disabled = true;
             generateBtn.classList.add('opacity-60', 'cursor-not-allowed');
             generateBtn.title = 'Sign in to generate a weekly plan with AI.';
@@ -417,12 +425,12 @@
         const plannerRequired = ['diet_type', 'goal_type', 'age', 'height_cm', 'weight_kg', 'biological_sex', 'activity_level'];
         const plannerMissing = missing.filter(m => plannerRequired.includes(m));
         if (!missing.length) {
-            el.innerHTML = `<strong class="text-purple-700 dark:text-purple-300">Profile connected (${data.completeness}%).</strong> Planner, recipes, and coach are using your settings and goals.`;
+            el.innerHTML = `<strong class="text-brand">Profile connected (${data.completeness}%).</strong> Planner, recipes, and coach are using your settings and goals.`;
             generateBtn.disabled = false;
             generateBtn.classList.remove('opacity-60', 'cursor-not-allowed');
         } else {
             const setupLink = `<a href="/profile/setup" class="underline font-semibold">Complete Setup</a>`;
-            el.innerHTML = `<strong class="text-amber-700 dark:text-amber-300">Profile partially connected (${data.completeness}%).</strong> Missing: ${missing.join(', ')}. ${setupLink}`;
+            el.innerHTML = `<strong class="text-warn">Profile partially connected (${data.completeness}%).</strong> Missing: ${missing.join(', ')}. ${setupLink}`;
             if (plannerMissing.length) {
                 generateBtn.disabled = true;
                 generateBtn.classList.add('opacity-60', 'cursor-not-allowed');
@@ -437,8 +445,10 @@
         document.querySelectorAll('.log-tab').forEach(btn => {
             btn.addEventListener('click', () => {
                 const tab = btn.dataset.logTab;
-                document.querySelectorAll('.log-tab').forEach(x => x.className = 'log-tab chip-toggle');
-                btn.className = 'log-tab chip-toggle chip-toggle-active';
+                document.querySelectorAll('.log-tab').forEach(x => {
+                    x.className = 'log-tab pill pill-neutral cursor-pointer';
+                });
+                btn.className = 'log-tab pill pill-brand cursor-pointer';
                 document.querySelectorAll('.log-pane').forEach(p => p.classList.add('hidden'));
                 document.getElementById(`tab-${tab}`).classList.remove('hidden');
             });
@@ -448,22 +458,22 @@
     function renderPlan(days = []) {
         const c = document.getElementById('planContainer');
         if (!days.length) {
-            c.innerHTML = '<p class="text-sm text-gray-500">No plan for this week yet. Generate one.</p>';
+            c.innerHTML = '<p class="text-sm text-muted">No plan for this week yet. Generate one.</p>';
             return;
         }
         c.innerHTML = days.map((d, idx) => {
             const slots = d.slots || [];
             return `
-                <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white/50 dark:bg-black/20 min-h-[220px]">
-                    <div class="text-sm font-bold text-gray-900 dark:text-white mb-3">${weekdays[idx]} <span class="text-xs text-gray-500">${d.date || ''}</span></div>
+                <div class="border border-border rounded-2xl p-4 bg-surface2 min-h-[220px]">
+                    <div class="text-sm font-bold text-text mb-3">${weekdays[idx]} <span class="text-xs text-muted font-normal">${d.date || ''}</span></div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-2 items-stretch">
                         ${['breakfast','lunch','dinner'].map(slotName => {
                 const slot = slots.find(s => s.slot === slotName) || { slot: slotName, recipe_name: '', ingredients: [] };
                 return `
-                                <div class="rounded-lg border border-gray-100 dark:border-gray-800 p-2 min-h-[150px] flex flex-col">
-                                    <p class="text-[11px] uppercase tracking-wide text-gray-500 mb-1">${slotName}</p>
-                                    <input data-day="${idx}" data-slot="${slotName}" data-field="recipe_name" value="${slot.recipe_name || ''}" class="plan-input input-glass w-full rounded-lg px-2 py-1 text-sm mb-1" placeholder="Meal name">
-                                    <textarea data-day="${idx}" data-slot="${slotName}" data-field="ingredients" class="plan-input input-glass w-full rounded-lg px-2 py-1 text-xs h-20 resize-none" placeholder="ingredients comma separated">${(slot.ingredients || []).join(', ')}</textarea>
+                                <div class="rounded-xl border border-border p-2 min-h-[150px] flex flex-col bg-surface">
+                                    <p class="label-tiny mb-1">${slotName}</p>
+                                    <input data-day="${idx}" data-slot="${slotName}" data-field="recipe_name" value="${slot.recipe_name || ''}" class="plan-input input text-sm mb-1 !rounded-lg !py-1.5" placeholder="Meal name">
+                                    <textarea data-day="${idx}" data-slot="${slotName}" data-field="ingredients" class="plan-input input text-xs h-20 resize-none !rounded-lg !py-1.5" placeholder="ingredients comma separated">${(slot.ingredients || []).join(', ')}</textarea>
                                 </div>
                             `;
             }).join('')}
@@ -478,14 +488,14 @@
         const badge = document.getElementById('groceryCountBadge');
         if (!items.length) {
             badge.textContent = '0 items';
-            c.innerHTML = '<p class="text-sm text-gray-500">No grocery list generated yet.</p>';
+            c.innerHTML = '<p class="text-sm text-muted">No grocery list generated yet.</p>';
             return;
         }
         badge.textContent = `${items.length} items`;
         c.innerHTML = items.map(i => `
-            <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 py-1.5">
-                <span class="truncate pr-3">${i.item}</span>
-                <span class="text-xs text-gray-500">x${i.count}</span>
+            <div class="flex items-center justify-between border-b border-border py-1.5">
+                <span class="truncate pr-3 text-text">${i.item}</span>
+                <span class="text-xs text-muted">x${i.count}</span>
             </div>
         `).join('');
     }
@@ -521,7 +531,7 @@
                 const missing = (data.missing || []).join(', ');
                 showLogStatus(`Complete profile first: ${missing}`, false);
                 const contextBanner = document.getElementById('contextBanner');
-                contextBanner.innerHTML = `<strong class="text-amber-700 dark:text-amber-300">Planner locked:</strong> Missing ${missing}. <a href="${data.setup_url || '/profile/setup'}" class="underline font-semibold">Open Profile Setup</a>`;
+                contextBanner.innerHTML = `<strong class="text-warn">Planner locked:</strong> Missing ${missing}. <a href="${data.setup_url || '/profile/setup'}" class="underline font-semibold">Open Profile Setup</a>`;
             } else if (data.error === 'ai_unavailable') {
                 showLogStatus('AI planner is currently unavailable. Please try again shortly.', false);
             } else if (data.error === 'ai_generation_failed') {
@@ -616,7 +626,7 @@
         const el = document.getElementById('barcodeScannerStatus');
         if (!el) return;
         el.textContent = message;
-        el.className = `text-xs ${ok ? 'text-gray-300' : 'text-red-300'}`;
+        el.className = `text-xs ${ok ? 'text-muted' : 'text-danger'}`;
     }
 
     function stopBarcodeScanner() {

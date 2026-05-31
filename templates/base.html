@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full antialiased scroll-smooth">
+<html lang="en" class="scroll-smooth">
 
 <head>
     <!-- Google tag (gtag.js) -->
@@ -8,507 +8,302 @@
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
-
         gtag('config', 'G-G0MHSHD7R9');
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Alimento - AI-Powered Nutrition Analysis{% endblock %}</title>
+    <title>{% block title %}Alimento — Nutrition guidance that adapts to you{% endblock %}</title>
 
-    <!-- Meta Tags -->
-    <meta name="description" content="Empowering healthier eating choices through AI-powered meal analysis.">
-    <meta name="theme-color" content="#9370DB">
+    <!-- Meta -->
+    <meta name="description" content="AI-powered nutrition tracking. Log meals, plan your week, track macros, and get personalized coaching.">
+    <meta name="theme-color" content="#6E9B6C">
 
-    <!-- Fonts: Geist (Sans) + Playfair Display (Serif) -->
+    <!-- Dark mode init (before render to avoid flash) -->
+    <script>
+        (function(){
+            var t = localStorage.getItem('alimento-theme');
+            if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
+    <!-- Fonts: Geist + Playfair Display -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600;1,700&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS v3.4 (Stable via CDN for rapid dev) -->
+    <!-- Tailwind config — MUST load before CDN -->
+    <script src="{{ url_for('static', filename='tw-config.js') }}"></script>
+
+    <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
-    <!-- Custom CSS -->
+    <!-- Design system CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Geist', 'sans-serif'],
-                        serif: ['Playfair Display', 'serif'],
-                    },
-                    colors: {
-                        glass: {
-                            light: 'rgba(255, 255, 255, 0.7)',
-                            dark: 'rgba(15, 23, 42, 0.6)',
-                        }
-                    },
-                    animation: {
-                        'float': 'float 6s ease-in-out infinite',
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
 
     {% block head %}{% endblock %}
 </head>
 
-<body class="min-h-full flex flex-col font-sans text-gray-900 dark:text-gray-100 selection:bg-purple-500/30"
+<body class="bg-bg text-text font-sans antialiased min-h-screen flex flex-col"
     data-authenticated="{{ current_user.is_authenticated|tojson }}">
 
     {% set guest_browsing = not (current_user and current_user.is_authenticated) %}
 
+    <!-- Guest Banner -->
     {% if guest_browsing %}
-    <div
-        id="guestBanner"
-        class="relative z-40 w-full shrink-0 bg-amber-50/95 dark:bg-amber-950/90 border-b border-amber-200 dark:border-amber-800 px-3 sm:px-4 py-2.5 text-center text-[11px] sm:text-sm text-amber-950 dark:text-amber-100 shadow-sm">
-        <span>Browsing as a guest — <strong>3 free meal logs</strong> on the Planner. </span>
-        <a href="{{ url_for('auth.login') }}" class="underline font-semibold">Sign in with Google</a>
-        <span> to keep history, inventory, and social features.</span>
+    <div id="guest-banner" class="w-full bg-warn/10 border-b border-warn/20">
+        <div class="max-w-[1280px] mx-auto px-4 py-2 flex items-center gap-3 text-sm">
+            <i class="ph ph-info text-warn text-[16px]"></i>
+            <span class="text-text/90"><span class="font-medium">Browsing as guest</span> — 3 free meal logs. Sign in with Google to unlock everything.</span>
+            <button class="open-login-modal ml-auto pill pill-warn font-medium hover:opacity-80 transition cursor-pointer">Sign in</button>
+            <button onclick="__alimentoDismissGuest()" class="text-muted hover:text-text transition" aria-label="Dismiss"><i class="ph ph-x text-[16px]"></i></button>
+        </div>
     </div>
     {% endif %}
 
     {% set show_nav_value %}{% block show_nav %}true{% endblock %}{% endset %}
 
-    <!-- Sticky Glass Navigation -->
+    <!-- Sticky Floating Navbar -->
     {% if show_nav_value.strip() != 'false' %}
-    <div id="mainNavBar"
-        class="sticky top-0 left-0 right-0 z-50 flex justify-center px-3 sm:px-4 pt-2 sm:pt-3 transition-transform duration-200">
-        <nav
-            class="glass-pill rounded-2xl lg:rounded-full px-3 sm:px-5 py-2 sm:py-2.5 flex items-center justify-between w-full max-w-7xl transition-all duration-200">
+    <div class="sticky top-0 z-40 pt-3 px-4">
+        <nav id="alimento-nav" class="nav-pill max-w-[1280px] mx-auto rounded-3xl px-3 py-2 flex items-center gap-2">
 
-            <!-- Logo area -->
-            <a href="/" class="flex items-center space-x-2 group">
-                <div class="w-8 h-8 relative">
-                    <img src="{{ url_for('static', filename='icon64.png') }}" alt="Logo"
-                        class="w-full h-full object-contain transition-transform group-hover:rotate-12 rounded-lg">
-                </div>
-                <span
-                    class="font-bold text-lg tracking-tight bg-gradient-to-r from-purple-600 to-purple-400 bg-clip-text text-transparent group-hover:opacity-80 transition-opacity">
-                    Alimento
+            <!-- Logo -->
+            <a href="{{ url_for('index') }}" class="flex items-center gap-2 px-3 py-1.5 rounded-2xl" aria-label="Alimento home">
+                <span class="w-8 h-8 rounded-2xl bg-brand text-white grid place-items-center flex-shrink-0">
+                    <i class="ph ph-leaf text-[18px]"></i>
                 </span>
+                <span class="font-display italic text-[22px] text-brand-ink dark:text-brand leading-none">Alimento</span>
             </a>
 
-            <!-- Desktop Links -->
-            <div class="hidden lg:flex items-center space-x-1">
-                <a href="/"
-                    class="px-4 py-2 rounded-full text-sm font-medium transition-colors {% if request.endpoint == 'index' %}nav-link-active{% else %}text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100/50 dark:hover:bg-white/5{% endif %}">
-                    Home
-                </a>
-                <a href="/dashboard"
-                    class="px-4 py-2 rounded-full text-sm font-medium transition-colors {% if request.endpoint == 'dashboard' %}nav-link-active{% else %}text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100/50 dark:hover:bg-white/5{% endif %}">
-                    Dashboard
-                </a>
-                <div class="relative group">
-                    <button
-                        class="px-4 py-2 rounded-full text-sm font-medium transition-colors inline-flex items-center gap-1 {% if request.path.startswith('/planner') or request.path.startswith('/recipes') or request.path.startswith('/progress') or request.path.startswith('/social') %}nav-link-active{% else %}text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100/50 dark:hover:bg-white/5{% endif %}">
-                        <span>Tools</span>
-                        <i class="ph ph-caret-down"></i>
+            <!-- Desktop Nav Links -->
+            <div class="hidden lg:flex items-center gap-1 mx-auto">
+                <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">Home</a>
+                <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a>
+
+                <!-- Tools Dropdown -->
+                <div id="tools-wrap" class="relative">
+                    <button onclick="__alimentoToggleTools(event)" class="nav-link inline-flex items-center gap-1 {% if request.path.startswith('/inventory') or request.path.startswith('/planner') or request.path.startswith('/recipes') or request.path.startswith('/progress') or request.path.startswith('/social') or request.path.startswith('/coach') %}active{% endif %}">
+                        Tools <i class="ph ph-caret-down text-[12px]"></i>
                     </button>
-                    <div
-                        class="absolute left-0 top-full mt-2 min-w-[14.5rem] surface-solid rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[140] overflow-visible">
-                        <div class="p-2 space-y-1">
-                            <div class="group/row relative flex items-stretch rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-white/10">
-                                <a href="/inventory" class="flex min-w-0 flex-1 items-center gap-2 px-3 py-2"><i class="ph ph-package shrink-0"></i><span>Inventory</span></a>
-                                <div class="flex shrink-0 items-center pr-1.5 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/row:pointer-events-auto group-hover/row:opacity-100 has-[:focus]:pointer-events-auto has-[:focus]:opacity-100">
-                                    <button type="button" class="group/info relative inline-flex rounded border-0 bg-transparent p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60" aria-label="What Inventory does">
-                                        <i class="ph ph-info pointer-events-none text-base text-gray-400 group-hover/info:text-purple-600 dark:text-gray-500 dark:group-hover/info:text-purple-400" aria-hidden="true"></i>
-                                        <span class="pointer-events-none absolute bottom-full left-1/2 z-[200] mb-1.5 w-max max-w-[12.5rem] -translate-x-1/2 rounded-lg bg-gray-900 px-2 py-1.5 text-left text-[11px] font-normal leading-snug text-white opacity-0 shadow-lg ring-1 ring-white/10 transition-opacity duration-150 group-hover/info:opacity-100 group-focus-within/info:opacity-100 dark:bg-gray-800">Pantry, fridge, and low-stock alerts</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="group/row relative flex items-stretch rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-white/10">
-                                <a href="/planner" class="flex min-w-0 flex-1 items-center gap-2 px-3 py-2"><i class="ph ph-calendar shrink-0"></i><span>Planner</span></a>
-                                <div class="flex shrink-0 items-center pr-1.5 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/row:pointer-events-auto group-hover/row:opacity-100 has-[:focus]:pointer-events-auto has-[:focus]:opacity-100">
-                                    <button type="button" class="group/info relative inline-flex rounded border-0 bg-transparent p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60" aria-label="What Planner does">
-                                        <i class="ph ph-info pointer-events-none text-base text-gray-400 group-hover/info:text-purple-600 dark:text-gray-500 dark:group-hover/info:text-purple-400" aria-hidden="true"></i>
-                                        <span class="pointer-events-none absolute bottom-full left-1/2 z-[200] mb-1.5 w-max max-w-[12.5rem] -translate-x-1/2 rounded-lg bg-gray-900 px-2 py-1.5 text-left text-[11px] font-normal leading-snug text-white opacity-0 shadow-lg ring-1 ring-white/10 transition-opacity duration-150 group-hover/info:opacity-100 group-focus-within/info:opacity-100 dark:bg-gray-800">Meals and shopping around what you have</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="group/row relative flex items-stretch rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-white/10">
-                                <a href="/recipes" class="flex min-w-0 flex-1 items-center gap-2 px-3 py-2"><i class="ph ph-book-open shrink-0"></i><span>Recipes</span></a>
-                                <div class="flex shrink-0 items-center pr-1.5 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/row:pointer-events-auto group-hover/row:opacity-100 has-[:focus]:pointer-events-auto has-[:focus]:opacity-100">
-                                    <button type="button" class="group/info relative inline-flex rounded border-0 bg-transparent p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60" aria-label="What Recipes does">
-                                        <i class="ph ph-info pointer-events-none text-base text-gray-400 group-hover/info:text-purple-600 dark:text-gray-500 dark:group-hover/info:text-purple-400" aria-hidden="true"></i>
-                                        <span class="pointer-events-none absolute bottom-full left-1/2 z-[200] mb-1.5 w-max max-w-[12.5rem] -translate-x-1/2 rounded-lg bg-gray-900 px-2 py-1.5 text-left text-[11px] font-normal leading-snug text-white opacity-0 shadow-lg ring-1 ring-white/10 transition-opacity duration-150 group-hover/info:opacity-100 group-focus-within/info:opacity-100 dark:bg-gray-800">Ideas tailored to your diet and pantry</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="group/row relative flex items-stretch rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-white/10">
-                                <a href="/progress" class="flex min-w-0 flex-1 items-center gap-2 px-3 py-2"><i class="ph ph-chart-bar shrink-0"></i><span>Progress</span></a>
-                                <div class="flex shrink-0 items-center pr-1.5 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/row:pointer-events-auto group-hover/row:opacity-100 has-[:focus]:pointer-events-auto has-[:focus]:opacity-100">
-                                    <button type="button" class="group/info relative inline-flex rounded border-0 bg-transparent p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60" aria-label="What Progress does">
-                                        <i class="ph ph-info pointer-events-none text-base text-gray-400 group-hover/info:text-purple-600 dark:text-gray-500 dark:group-hover/info:text-purple-400" aria-hidden="true"></i>
-                                        <span class="pointer-events-none absolute bottom-full left-1/2 z-[200] mb-1.5 w-max max-w-[12.5rem] -translate-x-1/2 rounded-lg bg-gray-900 px-2 py-1.5 text-left text-[11px] font-normal leading-snug text-white opacity-0 shadow-lg ring-1 ring-white/10 transition-opacity duration-150 group-hover/info:opacity-100 group-focus-within/info:opacity-100 dark:bg-gray-800">Trends for goals and nutrition</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="group/row relative flex items-stretch rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-white/10">
-                                <a href="/social" data-login-next="/social" class="auth-required-link flex min-w-0 flex-1 items-center gap-2 px-3 py-2"><i class="ph ph-users shrink-0"></i><span>Social</span></a>
-                                <div class="flex shrink-0 items-center pr-1.5 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/row:pointer-events-auto group-hover/row:opacity-100 has-[:focus]:pointer-events-auto has-[:focus]:opacity-100">
-                                    <button type="button" class="group/info relative inline-flex rounded border-0 bg-transparent p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60" aria-label="What Social does">
-                                        <i class="ph ph-info pointer-events-none text-base text-gray-400 group-hover/info:text-purple-600 dark:text-gray-500 dark:group-hover/info:text-purple-400" aria-hidden="true"></i>
-                                        <span class="pointer-events-none absolute bottom-full left-1/2 z-[200] mb-1.5 w-max max-w-[12.5rem] -translate-x-1/2 rounded-lg bg-gray-900 px-2 py-1.5 text-left text-[11px] font-normal leading-snug text-white opacity-0 shadow-lg ring-1 ring-white/10 transition-opacity duration-150 group-hover/info:opacity-100 group-focus-within/info:opacity-100 dark:bg-gray-800">Friends, posts, and shared meals</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                    <div id="tools-dropdown" class="hidden absolute left-1/2 -translate-x-1/2 top-full mt-3 w-64 p-2 card !rounded-2xl z-50" style="box-shadow:0 4px 12px rgba(20,15,10,0.06),0 16px 40px rgba(20,15,10,0.08);">
+                        <a href="{{ url_for('v3.inventory_page') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-surface2 transition {% if request.path.startswith('/inventory') %}text-brand-ink dark:text-brand bg-brand-tint{% else %}text-text{% endif %}">
+                            <i class="ph ph-package text-[18px] text-muted"></i><span>Inventory</span>
+                        </a>
+                        <a href="{{ url_for('v3.planner_page') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-surface2 transition {% if request.path.startswith('/planner') %}text-brand-ink dark:text-brand bg-brand-tint{% else %}text-text{% endif %}">
+                            <i class="ph ph-calendar-blank text-[18px] text-muted"></i><span>Planner</span>
+                        </a>
+                        <a href="{{ url_for('v3.recipes_page') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-surface2 transition {% if request.path.startswith('/recipes') %}text-brand-ink dark:text-brand bg-brand-tint{% else %}text-text{% endif %}">
+                            <i class="ph ph-cooking-pot text-[18px] text-muted"></i><span>Recipes</span>
+                        </a>
+                        <a href="{{ url_for('v3.progress_page') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-surface2 transition {% if request.path.startswith('/progress') %}text-brand-ink dark:text-brand bg-brand-tint{% else %}text-text{% endif %}">
+                            <i class="ph ph-chart-line-up text-[18px] text-muted"></i><span>Progress</span>
+                        </a>
+                        <a href="{{ url_for('v3.social_page') }}" data-login-next="/social" class="auth-required-link flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-surface2 transition {% if request.path.startswith('/social') %}text-brand-ink dark:text-brand bg-brand-tint{% else %}text-text{% endif %}">
+                            <i class="ph ph-users-three text-[18px] text-muted"></i><span>Social</span>
+                        </a>
+                        <a href="{{ url_for('v3.coach_page') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-surface2 transition {% if request.path.startswith('/coach') %}text-brand-ink dark:text-brand bg-brand-tint{% else %}text-text{% endif %}">
+                            <i class="ph ph-chat-circle-dots text-[18px] text-muted"></i><span>Coach</span>
+                        </a>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Actions -->
-            <div class="flex items-center space-x-3">
+            <!-- Right side -->
+            <div class="ml-auto lg:ml-0 flex items-center gap-2">
                 <!-- Theme Toggle -->
-                <button id="themeToggle"
-                    class="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors focus:outline-none"
-                    aria-label="Toggle Theme">
-                    <i class="ph ph-sun text-lg dark:hidden"></i>
-                    <i class="ph ph-moon text-lg hidden dark:block text-yellow-100"></i>
+                <button onclick="__alimentoToggleTheme()" class="btn btn-ghost btn-icon" aria-label="Toggle theme">
+                    <i data-theme-icon class="ph ph-moon text-[18px]"></i>
                 </button>
 
-                <!-- Mobile Nav Toggle -->
-                <button id="mobileMenuToggle"
-                    class="lg:hidden p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-                    aria-label="Toggle Navigation">
-                    <i id="mobileMenuIcon" class="ph ph-list text-xl"></i>
-                </button>
-
-                <!-- Auth -->
                 {% if current_user and current_user.is_authenticated %}
-                <div class="relative group">
-                    <button
-                        class="flex items-center space-x-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                        <div class="relative h-8 w-8 shrink-0">
+                <!-- User Dropdown -->
+                <div id="user-wrap" class="relative">
+                    <button onclick="__alimentoToggleUser(event)" class="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full hover:bg-surface2 transition">
+                        <div class="relative h-8 w-8 flex-shrink-0">
                             {% if current_user.picture %}
                             <img src="{{ current_user.picture|e }}" alt="" referrerpolicy="no-referrer"
-                                class="absolute inset-0 h-8 w-8 rounded-full border border-gray-200 object-cover dark:border-gray-700"
-                                onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden')">
+                                class="h-8 w-8 rounded-full border border-border object-cover"
+                                onerror="this.classList.add('hidden');this.nextElementSibling.classList.remove('hidden')">
                             {% endif %}
-                            <div
-                                class="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-purple-100 text-xs font-bold uppercase text-purple-700 dark:border-gray-700 dark:bg-purple-900 dark:text-purple-300 {% if current_user.picture %}hidden{% endif %}">
+                            <div class="{% if current_user.picture %}hidden {% endif %}flex h-8 w-8 items-center justify-center rounded-full border border-border bg-brand-tint text-brand-ink dark:text-brand text-xs font-bold uppercase">
                                 {{ current_user.name[0] if current_user.name else 'U' }}
                             </div>
                         </div>
+                        <span class="text-sm font-medium hidden sm:inline">{{ current_user.name.split()[0] if current_user.name else 'Account' }}</span>
+                        <i class="ph ph-caret-down text-[12px] text-muted"></i>
                     </button>
-                    <!-- Dropdown -->
-                    <div
-                        class="absolute right-0 top-full mt-2 w-56 surface-solid rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-[140] overflow-hidden">
-                        <div class="p-2 space-y-1">
-                            <div class="px-3 py-2 border-b border-gray-100 dark:border-gray-700/50 mb-1">
-                                <p class="text-sm font-medium truncate">{{ current_user.name }}</p>
-                                <p class="text-xs text-gray-500 truncate">{{ current_user.email }}</p>
-                            </div>
-                            <!-- Main Links (Now in Dropdown) -->
-                            <div class="md:hidden space-y-1 mb-1 border-b border-gray-100 dark:border-gray-700/50 pb-1">
-                                <a href="/"
-                                    class="flex items-center space-x-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                                    <i class="ph ph-house"></i> <span>Home</span>
-                                </a>
-                                <a href="/dashboard"
-                                    class="flex items-center space-x-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                                    <i class="ph ph-chart-line-up"></i> <span>Dashboard</span>
-                                </a>
-                                <a href="/inventory"
-                                    class="flex items-center space-x-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                                    <i class="ph ph-package"></i> <span>Inventory</span>
-                                </a>
-                                <a href="/planner"
-                                    class="flex items-center space-x-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                                    <i class="ph ph-calendar"></i> <span>Planner</span>
-                                </a>
-                                <a href="/recipes"
-                                    class="flex items-center space-x-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                                    <i class="ph ph-book-open"></i> <span>Recipes</span>
-                                </a>
-                                <a href="/progress"
-                                    class="flex items-center space-x-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                                    <i class="ph ph-chart-bar"></i> <span>Progress</span>
-                                </a>
-                                <a href="/social"
-                                    class="flex items-center space-x-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                                    <i class="ph ph-users"></i> <span>Social</span>
-                                </a>
-                            </div>
-                            <a href="{{ url_for('auth.profile') }}"
-                                class="flex items-center space-x-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                                <i class="ph ph-user"></i> <span>Account</span>
-                            </a>
-                            <a href="{{ url_for('profile.view_profile') }}"
-                                class="flex items-center space-x-3 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                                <i class="ph ph-faders"></i> <span>Diet Profile</span>
-                            </a>
-                            <div class="border-t border-gray-100 dark:border-gray-700/50 my-1"></div>
-                            <form method="post" action="{{ url_for('auth.logout') }}">
-                                <button type="submit"
-                                    class="w-full flex items-center space-x-3 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-left">
-                                    <i class="ph ph-sign-out"></i> <span>Sign out</span>
-                                </button>
-                            </form>
+                    <div id="user-dropdown" class="hidden absolute right-0 top-full mt-3 w-56 p-2 card !rounded-2xl z-50" style="box-shadow:0 4px 12px rgba(20,15,10,0.06),0 16px 40px rgba(20,15,10,0.08);">
+                        <div class="px-3 py-2 border-b border-border mb-1">
+                            <p class="text-sm font-medium truncate">{{ current_user.name }}</p>
+                            <p class="text-xs text-muted truncate">{{ current_user.email }}</p>
                         </div>
+                        <a href="{{ url_for('auth.profile') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-surface2 transition text-text">
+                            <i class="ph ph-user text-muted"></i>Account
+                        </a>
+                        <a href="{{ url_for('profile.view_profile') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-surface2 transition text-text">
+                            <i class="ph ph-faders text-muted"></i>Diet Profile
+                        </a>
+                        <a href="{{ url_for('dashboard') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-surface2 transition text-text">
+                            <i class="ph ph-squares-four text-muted"></i>Dashboard
+                        </a>
+                        <div class="my-1 border-t border-border"></div>
+                        <form method="post" action="{{ url_for('auth.logout') }}">
+                            <button type="submit" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm hover:bg-surface2 transition text-left text-danger">
+                                <i class="ph ph-sign-out"></i>Sign out
+                            </button>
+                        </form>
                     </div>
                 </div>
                 {% else %}
-                <button id="openLoginModal"
-                    class="btn-primary px-5 py-2 rounded-full text-sm font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
-                    Sign in
+                <!-- Sign in button (guest) -->
+                <button id="openLoginModal" class="btn btn-primary text-sm">
+                    <i class="ph ph-google-logo text-[16px]"></i> Sign in
                 </button>
                 {% endif %}
+
+                <!-- Mobile hamburger -->
+                <button onclick="__alimentoToggleMobileNav()" class="lg:hidden btn btn-ghost btn-icon" aria-label="Menu">
+                    <i class="ph ph-list text-[20px]"></i>
+                </button>
             </div>
         </nav>
-    </div>
-    {% endif %}
 
-    <!-- Mobile Menu Panel -->
-    {% if show_nav_value.strip() != 'false' %}
-    <div id="mobileMenuPanel" class="fixed top-[4.5rem] left-3 right-3 sm:left-4 sm:right-4 z-40 hidden lg:hidden transition-transform duration-200">
-        <div class="glass-panel rounded-2xl p-3 shadow-xl">
-            <div class="grid grid-cols-2 gap-2">
-                <a href="/" class="mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Home</a>
-                <a href="/dashboard" class="mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Dashboard</a>
-                <a href="/inventory" class="mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Inventory</a>
-                <a href="/planner" class="mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Planner</a>
-                <a href="/recipes" class="mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Recipes</a>
-                <a href="/progress" class="mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Progress</a>
-                <a href="/social" data-login-next="/social" class="auth-required-link mobile-nav-link px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10">Social</a>
+        <!-- Mobile Nav Panel -->
+        <div id="mobile-nav" class="hidden lg:hidden mx-0 mt-2 p-3 card !rounded-3xl">
+            <div class="grid grid-cols-2 gap-1">
+                <a href="{{ url_for('index') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm {% if request.endpoint == 'index' %}bg-brand-tint text-brand-ink dark:text-brand{% else %}text-text hover:bg-surface2{% endif %}">
+                    <i class="ph ph-house text-[16px] text-muted"></i><span>Home</span>
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm {% if request.endpoint == 'dashboard' %}bg-brand-tint text-brand-ink dark:text-brand{% else %}text-text hover:bg-surface2{% endif %}">
+                    <i class="ph ph-squares-four text-[16px] text-muted"></i><span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('v3.inventory_page') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm {% if request.path.startswith('/inventory') %}bg-brand-tint text-brand-ink dark:text-brand{% else %}text-text hover:bg-surface2{% endif %}">
+                    <i class="ph ph-package text-[16px] text-muted"></i><span>Inventory</span>
+                </a>
+                <a href="{{ url_for('v3.planner_page') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm {% if request.path.startswith('/planner') %}bg-brand-tint text-brand-ink dark:text-brand{% else %}text-text hover:bg-surface2{% endif %}">
+                    <i class="ph ph-calendar-blank text-[16px] text-muted"></i><span>Planner</span>
+                </a>
+                <a href="{{ url_for('v3.recipes_page') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm {% if request.path.startswith('/recipes') %}bg-brand-tint text-brand-ink dark:text-brand{% else %}text-text hover:bg-surface2{% endif %}">
+                    <i class="ph ph-cooking-pot text-[16px] text-muted"></i><span>Recipes</span>
+                </a>
+                <a href="{{ url_for('v3.progress_page') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm {% if request.path.startswith('/progress') %}bg-brand-tint text-brand-ink dark:text-brand{% else %}text-text hover:bg-surface2{% endif %}">
+                    <i class="ph ph-chart-line-up text-[16px] text-muted"></i><span>Progress</span>
+                </a>
+                <a href="{{ url_for('v3.social_page') }}" data-login-next="/social" class="auth-required-link flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm {% if request.path.startswith('/social') %}bg-brand-tint text-brand-ink dark:text-brand{% else %}text-text hover:bg-surface2{% endif %}">
+                    <i class="ph ph-users-three text-[16px] text-muted"></i><span>Social</span>
+                </a>
+                <a href="{{ url_for('v3.coach_page') }}" class="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm {% if request.path.startswith('/coach') %}bg-brand-tint text-brand-ink dark:text-brand{% else %}text-text hover:bg-surface2{% endif %}">
+                    <i class="ph ph-chat-circle-dots text-[16px] text-muted"></i><span>Coach</span>
+                </a>
             </div>
         </div>
     </div>
+
+    <!-- App JS (provides __alimentoToggleTheme etc.) -->
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
     {% endif %}
 
-    <!-- Login Modal (Kept mostly semantic, styled with glass) -->
+    <!-- Login Modal -->
     <div id="loginModal" class="fixed inset-0 z-[100] hidden items-center justify-center">
         <div id="loginBackdrop" class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"></div>
-        <div
-            class="relative w-full max-w-md mx-4 glass-panel rounded-3xl p-8 transform scale-95 transition-all animate-in fade-in zoom-in-95 duration-200">
-            <button id="closeLoginModal"
-                class="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+        <div class="modal relative w-full max-w-md mx-4">
+            <button id="closeLoginModal" class="absolute top-4 right-4 btn btn-ghost btn-icon">
                 <i class="ph ph-x text-lg"></i>
             </button>
 
             <div class="text-center mb-8">
-                <div
-                    class="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-100 dark:from-purple-900/30 dark:to-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
-                    <img src="{{ url_for('static', filename='icon64.png') }}" alt="Icon" class="w-8 h-8 rounded-lg" />
+                <div class="w-16 h-16 bg-brand-tint rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="ph ph-leaf text-[32px] text-brand-ink dark:text-brand"></i>
                 </div>
-                <h2 class="text-2xl font-bold font-serif-accent mb-2">Welcome Back</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Sign in to sync your history and preferences</p>
+                <h2 class="text-2xl font-semibold font-display mb-2">Welcome Back</h2>
+                <p class="text-sm text-muted">Sign in to sync your history and preferences</p>
             </div>
 
             <a id="loginWithGoogleLink" href="{{ url_for('auth.login') }}"
-                class="w-full flex items-center justify-center px-6 py-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 rounded-xl text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200 group">
+                class="w-full flex items-center justify-center px-6 py-3.5 card rounded-xl text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200 group gap-3">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"
-                    class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform">
-                <span class="text-gray-700 dark:text-gray-200">Continue with Google</span>
+                    class="w-5 h-5 group-hover:scale-110 transition-transform flex-shrink-0">
+                <span class="text-text">Continue with Google</span>
             </a>
 
-            <p class="text-[10px] text-center text-gray-400 mt-6 max-w-xs mx-auto">
+            <p class="text-[10px] text-center text-muted mt-6 max-w-xs mx-auto">
                 By continuing, you agree to our Terms of Service and Privacy Policy.
             </p>
         </div>
     </div>
 
     <!-- Main Content -->
-    <main id="mainContent"
-        class="flex-grow pt-4 sm:pt-6 pb-12 sm:pb-16 px-2 sm:px-6 lg:px-8">
+    <main id="mainContent" class="flex-grow pt-4 sm:pt-6 pb-12 sm:pb-16 px-2 sm:px-6 lg:px-8">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Footer -->
     {% set show_footer_value %}{% block show_footer %}true{% endblock %}{% endset %}
     {% if show_footer_value.strip() != 'false' %}
-    <footer class="relative mt-auto bg-white/50 dark:bg-transparent backdrop-blur-xl overflow-hidden">
-
-        <!-- Main Content (Relative z-10) -->
-        <div class="relative z-10 max-w-7xl mx-auto pt-8 pb-24 sm:pb-28 md:pb-56 lg:pb-72 px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col lg:flex-row justify-between items-start gap-8">
-
-                <!-- Brand / Logo Small -->
-                <div class="max-w-xs">
-                    <div class="flex items-center space-x-2 mb-3">
-                        <img src="{{ url_for('static', filename='icon64.png') }}" class="h-6 w-auto opacity-80 rounded-md"
-                            alt="Alimento Logo">
-                        <span
-                            class="font-bold text-lg tracking-tight bg-gradient-to-r from-purple-600 to-purple-400 bg-clip-text text-transparent opacity-90">Alimento</span>
-                    </div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                        Smart nutrition analysis powered by cutting-edge AI. Eat smarter, live better.
-                    </p>
+    <footer class="mt-16 border-t border-border">
+        <div class="max-w-[1280px] mx-auto px-6 py-12 grid md:grid-cols-4 gap-8">
+            <div class="md:col-span-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-9 h-9 rounded-2xl bg-brand text-white grid place-items-center flex-shrink-0">
+                        <i class="ph ph-leaf text-[20px]"></i>
+                    </span>
+                    <span class="font-display italic text-2xl text-brand-ink dark:text-brand">Alimento</span>
                 </div>
-
-                <!-- Navigation Links -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-10">
-                    <div>
-                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Platform</h3>
-                        <ul class="space-y-3">
-                            <li><a href="/"
-                                    class="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Home</a>
-                            </li>
-                            <li><a href="/dashboard"
-                                    class="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Dashboard</a>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div>
-                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Tools</h3>
-                        <ul class="space-y-3">
-                            <li><a href="/inventory"
-                                    class="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Inventory</a>
-                            </li>
-                            <li><a href="/planner"
-                                    class="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Planner</a>
-                            </li>
-                            <li><a href="/recipes"
-                                    class="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Recipes</a>
-                            </li>
-                            <li><a href="/progress"
-                                    class="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Progress</a>
-                            </li>
-                            <li><a href="/social" data-login-next="/social"
-                                    class="auth-required-link text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Social</a>
-                            </li>
-                        </ul>
-                    </div>
-
-                </div>
+                <p class="mt-4 text-sm text-muted max-w-sm">Nutrition guidance that adapts to you — log meals, plan ahead, and improve every day.</p>
             </div>
-
-            <div class="mt-8 pt-0 flex flex-col items-start md:flex-row md:items-center md:justify-between gap-4">
-                <p class="text-xs text-gray-500">
-                    &copy; 2026 Alimento. All rights reserved.
-                </p>
-                <div class="flex space-x-6">
-                    <a href="/privacy"
-                        class="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-gray-300">Privacy Policy</a>
-                    <a href="/terms" class="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-gray-300">Terms of
-                        Service</a>
-                </div>
+            <div>
+                <p class="label-tiny">Product</p>
+                <ul class="mt-3 space-y-2 text-sm">
+                    <li><a href="{{ url_for('dashboard') }}" class="text-muted hover:text-text transition">Dashboard</a></li>
+                    <li><a href="{{ url_for('v3.planner_page') }}" class="text-muted hover:text-text transition">Planner</a></li>
+                    <li><a href="{{ url_for('v3.recipes_page') }}" class="text-muted hover:text-text transition">Recipes</a></li>
+                    <li><a href="{{ url_for('v3.coach_page') }}" class="text-muted hover:text-text transition">Coach</a></li>
+                </ul>
+            </div>
+            <div>
+                <p class="label-tiny">Company</p>
+                <ul class="mt-3 space-y-2 text-sm">
+                    <li><a href="#" class="text-muted hover:text-text transition">About</a></li>
+                    <li><a href="/privacy" class="text-muted hover:text-text transition">Privacy</a></li>
+                    <li><a href="/terms" class="text-muted hover:text-text transition">Terms</a></li>
+                    <li><a href="#" class="text-muted hover:text-text transition">Contact</a></li>
+                </ul>
             </div>
         </div>
-        <div
-            class="absolute bottom-0 left-0 right-0 z-0 flex justify-center pointer-events-none overflow-hidden select-none">
-            <h1
-                class="text-[20vw] font-bold leading-none tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-gray-900/10 to-transparent dark:from-white/5 dark:to-transparent w-full text-center">
-                Alimento
-            </h1>
+        <div class="border-t border-border">
+            <div class="max-w-[1280px] mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted">
+                <span>&copy; 2026 Alimento. Made for healthier choices.</span>
+                <span class="flex items-center gap-1">Powered by <span class="font-medium text-text">Google Gemini</span></span>
+            </div>
         </div>
     </footer>
     {% endif %}
 
-    <!-- Theme Script -->
+    <!-- Base scripts: modal + auth-required links -->
     <script>
-        const themeToggle = document.getElementById('themeToggle');
-        const html = document.documentElement;
-
-        // Initialize
-        const savedTheme = localStorage.getItem('theme');
-        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-        if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
-            html.classList.add('dark');
-        } else {
-            html.classList.remove('dark');
-        }
-
-        // Toggle
-        if (themeToggle) {
-            themeToggle.addEventListener('click', () => {
-                html.classList.toggle('dark');
-                localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
-            });
-        }
-
-        // Login Modal Logic
-        const openLoginModals = document.querySelectorAll('#openLoginModal, .open-login-modal'); // Handle multiple triggers
-        const loginModal = document.getElementById('loginModal');
-        const closeLoginModal = document.getElementById('closeLoginModal');
-        const loginBackdrop = document.getElementById('loginBackdrop');
-        const loginWithGoogleLink = document.getElementById('loginWithGoogleLink');
-        const isAuthed = String(document.body?.dataset?.authenticated || 'false') === 'true';
-        const loginBaseHref = '{{ url_for("auth.login") }}';
-
-        // Mobile menu logic
-        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-        const mobileMenuPanel = document.getElementById('mobileMenuPanel');
-        const mobileMenuIcon = document.getElementById('mobileMenuIcon');
-
-        function closeMobileMenu() {
-            if (!mobileMenuPanel || !mobileMenuIcon) return;
-            mobileMenuPanel.classList.add('hidden');
-            mobileMenuIcon.className = 'ph ph-list text-xl';
-        }
-
-        if (mobileMenuToggle && mobileMenuPanel && mobileMenuIcon) {
-            mobileMenuToggle.addEventListener('click', () => {
-                const hidden = mobileMenuPanel.classList.toggle('hidden');
-                mobileMenuIcon.className = hidden ? 'ph ph-list text-xl' : 'ph ph-x text-xl';
-            });
-
-            document.querySelectorAll('.mobile-nav-link').forEach(link => {
-                link.addEventListener('click', closeMobileMenu);
-            });
-
-            document.addEventListener('click', (e) => {
-                if (mobileMenuPanel.classList.contains('hidden')) return;
-                const target = e.target;
-                if (!mobileMenuPanel.contains(target) && !mobileMenuToggle.contains(target)) {
-                    closeMobileMenu();
-                }
-            });
-        }
-
-        // Navbar behavior: hide on scroll down, reveal on scroll up.
-        const mainNavBar = document.getElementById('mainNavBar');
-        let lastScrollY = window.scrollY;
-        let navHidden = false;
-        function applyNavVisibility(hidden) {
-            if (!mainNavBar) return;
-            navHidden = hidden;
-            mainNavBar.style.transform = hidden ? 'translateY(calc(-100% - 0.75rem))' : 'translateY(0)';
-            if (mobileMenuPanel && !mobileMenuPanel.classList.contains('hidden')) {
-                mobileMenuPanel.style.transform = hidden ? 'translateY(calc(-100% - 0.75rem))' : 'translateY(0)';
-            } else if (mobileMenuPanel) {
-                mobileMenuPanel.style.transform = '';
-            }
-        }
-        window.addEventListener('scroll', () => {
-            if (!mainNavBar) return;
-            const currentY = window.scrollY;
-            const delta = currentY - lastScrollY;
-            if (currentY <= 10 || delta < 0) {
-                applyNavVisibility(false);
-            } else if (delta > 0 && currentY > 80 && (mobileMenuPanel?.classList.contains('hidden') ?? true)) {
-                applyNavVisibility(true);
-            }
-            lastScrollY = currentY;
-        }, { passive: true });
-        window.addEventListener('resize', () => {
-            if (window.innerWidth < 1024 && !navHidden) {
-                return;
-            }
-            applyNavVisibility(false);
-        });
+        var loginModal = document.getElementById('loginModal');
+        var closeLoginModalBtn = document.getElementById('closeLoginModal');
+        var loginBackdrop = document.getElementById('loginBackdrop');
+        var loginWithGoogleLink = document.getElementById('loginWithGoogleLink');
+        var isAuthed = String((document.body && document.body.dataset && document.body.dataset.authenticated) || 'false') === 'true';
+        var loginBaseHref = '{{ url_for("auth.login") }}';
 
         function setLoginNext(nextPath) {
             if (!loginWithGoogleLink) return;
-            const fallback = window.location.pathname || '/';
-            const target = nextPath && nextPath.startsWith('/') ? nextPath : fallback;
-            loginWithGoogleLink.href = `${loginBaseHref}?next=${encodeURIComponent(target)}`;
+            var fallback = window.location.pathname || '/';
+            var target = nextPath && String(nextPath).startsWith('/') ? nextPath : fallback;
+            loginWithGoogleLink.href = loginBaseHref + '?next=' + encodeURIComponent(target);
         }
 
         function toggleModal(show, nextPath) {
+            if (!loginModal) return;
             if (show) {
-                setLoginNext(nextPath);
+                setLoginNext(nextPath || window.location.pathname);
                 loginModal.classList.remove('hidden');
                 loginModal.classList.add('flex');
             } else {
@@ -517,22 +312,23 @@
             }
         }
 
-        openLoginModals.forEach(btn => btn.addEventListener('click', () => toggleModal(true)));
-        if (closeLoginModal) closeLoginModal.addEventListener('click', () => toggleModal(false));
-        if (loginBackdrop) loginBackdrop.addEventListener('click', () => toggleModal(false));
+        document.querySelectorAll('#openLoginModal, .open-login-modal').forEach(function(btn) {
+            btn.addEventListener('click', function() { toggleModal(true); });
+        });
+        if (closeLoginModalBtn) closeLoginModalBtn.addEventListener('click', function() { toggleModal(false); });
+        if (loginBackdrop) loginBackdrop.addEventListener('click', function() { toggleModal(false); });
 
         if (!isAuthed) {
-            document.querySelectorAll('.auth-required-link').forEach((link) => {
-                link.addEventListener('click', (e) => {
+            document.querySelectorAll('.auth-required-link').forEach(function(link) {
+                link.addEventListener('click', function(e) {
                     e.preventDefault();
-                    const nextTarget = link.getAttribute('data-login-next') || link.getAttribute('href') || '/';
-                    closeMobileMenu();
+                    var nextTarget = link.getAttribute('data-login-next') || link.getAttribute('href') || '/';
                     toggleModal(true, nextTarget);
                 });
             });
         }
 
-        const qs = new URLSearchParams(window.location.search);
+        var qs = new URLSearchParams(window.location.search);
         if (qs.get('login') === '1') {
             toggleModal(true, qs.get('next') || window.location.pathname);
         }

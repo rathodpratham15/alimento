@@ -1,241 +1,263 @@
 {% extends "base.html" %}
 
+{% block title %}Dashboard | Alimento{% endblock %}
+
 {% block content %}
-<div class="dashboard-page relative z-10 max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-5 sm:space-y-8">
+<div class="max-w-[1280px] mx-auto px-2 sm:px-4 lg:px-6 py-5 sm:py-8">
+  <div class="flex flex-col lg:flex-row gap-6">
 
-  <!-- Header with Greeting -->
-  <div class="relative z-[70] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-    <div>
-      <h1 id="welcomeHeading" class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-serif-accent">
-        Welcome back!</h1>
-      <div class="flex items-center gap-2 mt-1">
-        <div class="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></div>
-        <p id="dayProgress" class="text-sm font-medium text-gray-500 dark:text-gray-400">Loading today's status...</p>
-      </div>
-    </div>
-    <div class="control-strip w-full lg:w-auto">
-      <div class="flex items-center gap-2 relative">
-        <button id="prevDayBtn" class="icon-btn" aria-label="Previous day">
-          <i class="ph ph-caret-left"></i>
-        </button>
-        <button id="calendarToggle" class="selector-pill w-full lg:w-48 px-3 py-2 text-sm flex items-center justify-between">
-          <span id="calendarToggleLabel" class="truncate">Select date</span>
-          <i class="ph ph-calendar-blank text-gray-500"></i>
-        </button>
-        <input id="dashboardDate" type="date" class="sr-only" aria-hidden="true" tabindex="-1">
-        <button id="nextDayBtn" class="icon-btn" aria-label="Next day">
-          <i class="ph ph-caret-right"></i>
-        </button>
-        <button id="todayBtn" class="today-chip">Today</button>
+    <!-- Sidebar -->
+    <aside class="hidden lg:flex flex-col w-56 shrink-0 gap-1 pt-1">
+      <a href="{{ url_for('index') }}" class="side-link {% if request.endpoint == 'index' %}active{% endif %}">
+        <i class="ph ph-house text-[18px]"></i> Home
+      </a>
+      <a href="{{ url_for('dashboard') }}" class="side-link active">
+        <i class="ph ph-squares-four text-[18px]"></i> Dashboard
+      </a>
+      <div class="my-2 border-t border-border"></div>
+      <p class="label-tiny px-3 mb-1">Tools</p>
+      <a href="{{ url_for('v3.inventory_page') }}" class="side-link">
+        <i class="ph ph-package text-[18px]"></i> Inventory
+      </a>
+      <a href="{{ url_for('v3.planner_page') }}" class="side-link">
+        <i class="ph ph-calendar-blank text-[18px]"></i> Planner
+      </a>
+      <a href="{{ url_for('v3.recipes_page') }}" class="side-link">
+        <i class="ph ph-cooking-pot text-[18px]"></i> Recipes
+      </a>
+      <a href="{{ url_for('v3.progress_page') }}" class="side-link">
+        <i class="ph ph-chart-line-up text-[18px]"></i> Progress
+      </a>
+      <a href="{{ url_for('v3.social_page') }}" data-login-next="/social" class="auth-required-link side-link">
+        <i class="ph ph-users-three text-[18px]"></i> Social
+      </a>
+      <a href="{{ url_for('v3.coach_page') }}" class="side-link">
+        <i class="ph ph-chat-circle-dots text-[18px]"></i> Coach
+      </a>
+    </aside>
 
-        <div id="calendarPanel" class="hidden absolute top-12 left-0 sm:left-auto sm:right-0 z-[120] w-[19.5rem] surface-solid rounded-2xl p-3 shadow-xl">
-          <div class="flex items-center justify-between mb-2">
-            <button id="monthPrev" class="icon-btn h-8 w-8"><i class="ph ph-caret-left"></i></button>
-            <p id="monthLabel" class="text-sm font-semibold"></p>
-            <button id="monthNext" class="icon-btn h-8 w-8"><i class="ph ph-caret-right"></i></button>
-          </div>
-          <div class="grid grid-cols-7 text-[11px] text-gray-500 mb-1 px-1">
-            <span class="text-center">S</span><span class="text-center">M</span><span class="text-center">T</span>
-            <span class="text-center">W</span><span class="text-center">T</span><span class="text-center">F</span><span class="text-center">S</span>
-          </div>
-          <div id="monthGrid" class="grid grid-cols-7 gap-1"></div>
-          <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-            <button id="calendarTodayQuick" class="btn-mini btn-mini-primary">Jump to Today</button>
-            <button id="openNativePicker" class="btn-mini btn-mini-secondary">Use picker</button>
+    <!-- Main content -->
+    <div class="flex-1 min-w-0 space-y-5 sm:space-y-6">
+
+      <!-- Header with Greeting & Date Controls -->
+      <div class="relative z-[70] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 id="welcomeHeading" class="text-2xl sm:text-3xl font-semibold tracking-tight text-text font-display">
+            Welcome back!</h1>
+          <div class="flex items-center gap-2 mt-1">
+            <div class="w-2 h-2 rounded-full bg-brand animate-pulse"></div>
+            <p id="dayProgress" class="text-sm font-medium text-muted">Loading today's status...</p>
           </div>
         </div>
-      </div>
-      <p id="selectedDateLabel" class="text-[11px] text-gray-500 mt-2 px-1 truncate">Loading date...</p>
-    </div>
-  </div>
-
-  <!-- Top Metrics Row -->
-  <div class="metric-grid relative z-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-6">
-    <!-- Daily Calories (Glass Card) -->
-    <div class="metric-card glass-panel rounded-2xl p-1 relative overflow-hidden group">
-      <div
-        class="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-purple-50/50 dark:from-purple-900/10 dark:to-purple-900/10 pointer-events-none">
-      </div>
-      <div class="bg-white/40 dark:bg-gray-900/40 rounded-xl p-4 sm:p-5 relative z-10 h-full">
-        <h3 class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">Daily Calories</h3>
-        <div class="flex items-center justify-between">
-          <div class="relative w-16 h-16 sm:w-20 sm:h-20">
-            <svg viewBox="0 0 36 36" class="w-16 h-16 sm:w-20 sm:h-20 transform -rotate-90">
-              <path class="text-gray-200 dark:text-gray-700" stroke="currentColor" stroke-width="3" fill="none"
-                d="M18 2a16 16 0 1 1 0 32 16 16 0 0 1 0-32" />
-              <path id="calProgressPath" class="text-purple-500 drop-shadow-sm transition-all duration-1000 ease-out"
-                stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"
-                d="M18 2a16 16 0 1 1 0 32 16 16 0 0 1 0-32" stroke-dasharray="0,100" />
-            </svg>
-            <div class="absolute inset-0 flex items-center justify-center flex-col">
-              <span id="caloriesRemain" class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white leading-none">—</span>
-              <span class="text-[9px] text-gray-500 uppercase">Left</span>
-            </div>
-          </div>
-          <div class="text-right">
-            <div class="text-xl sm:text-2xl font-bold font-serif-accent text-gray-900 dark:text-white"><span
-                id="caloriesConsumed">—</span></div>
-            <div class="text-xs text-gray-500 mb-2">of <span id="caloriesTarget">—</span> kcal</div>
-            <button id="quickMeal"
-              class="text-[10px] font-bold uppercase tracking-wider text-purple-600 hover:text-purple-700 bg-purple-100/50 hover:bg-purple-100 dark:bg-purple-600 dark:text-white dark:hover:bg-purple-500 px-3 py-1.5 rounded-full transition-colors">
-              + Log Meal
+        <div class="w-full lg:w-auto">
+          <div class="flex items-center gap-2 relative">
+            <button id="prevDayBtn" class="btn btn-ghost btn-icon" aria-label="Previous day">
+              <i class="ph ph-caret-left"></i>
             </button>
+            <button id="calendarToggle" class="btn btn-ghost flex-1 lg:w-48 px-3 py-2 text-sm flex items-center justify-between border border-border rounded-xl">
+              <span id="calendarToggleLabel" class="truncate">Select date</span>
+              <i class="ph ph-calendar-blank text-muted"></i>
+            </button>
+            <input id="dashboardDate" type="date" class="sr-only" aria-hidden="true" tabindex="-1">
+            <button id="nextDayBtn" class="btn btn-ghost btn-icon" aria-label="Next day">
+              <i class="ph ph-caret-right"></i>
+            </button>
+            <button id="todayBtn" class="btn btn-secondary text-xs px-3 py-1.5">Today</button>
+
+            <div id="calendarPanel" class="hidden absolute top-12 left-0 sm:left-auto sm:right-0 z-[120] w-[19.5rem] card p-3">
+              <div class="flex items-center justify-between mb-2">
+                <button id="monthPrev" class="btn btn-ghost btn-icon h-8 w-8"><i class="ph ph-caret-left"></i></button>
+                <p id="monthLabel" class="text-sm font-semibold"></p>
+                <button id="monthNext" class="btn btn-ghost btn-icon h-8 w-8"><i class="ph ph-caret-right"></i></button>
+              </div>
+              <div class="grid grid-cols-7 text-[11px] text-muted mb-1 px-1">
+                <span class="text-center">S</span><span class="text-center">M</span><span class="text-center">T</span>
+                <span class="text-center">W</span><span class="text-center">T</span><span class="text-center">F</span><span class="text-center">S</span>
+              </div>
+              <div id="monthGrid" class="grid grid-cols-7 gap-1"></div>
+              <div class="flex items-center justify-between mt-2 pt-2 border-t border-border">
+                <button id="calendarTodayQuick" class="btn btn-secondary text-xs px-3 py-1">Jump to Today</button>
+                <button id="openNativePicker" class="btn btn-ghost text-xs px-3 py-1">Use picker</button>
+              </div>
+            </div>
           </div>
+          <p id="selectedDateLabel" class="text-[11px] text-muted mt-2 px-1 truncate">Loading date...</p>
         </div>
       </div>
-    </div>
 
-    <!-- Macros (Glass Card) -->
-    <div class="metric-card glass-panel rounded-2xl p-4 sm:p-6 flex flex-col justify-center">
-      <h3 class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">Macronutrients</h3>
-      <div class="space-y-3 sm:space-y-4">
-        <!-- Protein -->
-        <div>
-          <div class="flex justify-between text-xs mb-1">
-            <span class="font-medium text-blue-600 dark:text-blue-400">Protein</span>
-            <span class="text-gray-600 dark:text-gray-400"><span id="proG">0</span> / <span id="proT">0</span>g</span>
-          </div>
-          <div class="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div id="proBar" class="h-full bg-blue-500 rounded-full transition-all duration-700" style="width:0%"></div>
-          </div>
-        </div>
-        <!-- Carbs -->
-        <div>
-          <div class="flex justify-between text-xs mb-1">
-            <span class="font-medium text-purple-600 dark:text-purple-400">Carbs</span>
-            <span class="text-gray-600 dark:text-gray-400"><span id="carbG">0</span> / <span id="carbT">0</span>g</span>
-          </div>
-          <div class="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div id="carbBar" class="h-full bg-purple-500 rounded-full transition-all duration-700" style="width:0%">
+      <!-- Top Metrics Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+
+        <!-- Daily Calories -->
+        <div class="card p-4 sm:p-5 relative overflow-hidden">
+          <p class="label-tiny mb-3">Daily Calories</p>
+          <div class="flex items-center justify-between">
+            <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+              <svg viewBox="0 0 36 36" class="w-16 h-16 sm:w-20 sm:h-20 transform -rotate-90">
+                <path class="text-surface2" stroke="currentColor" stroke-width="3" fill="none"
+                  d="M18 2a16 16 0 1 1 0 32 16 16 0 0 1 0-32" />
+                <path id="calProgressPath" class="text-brand drop-shadow-sm transition-all duration-1000 ease-out"
+                  stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"
+                  d="M18 2a16 16 0 1 1 0 32 16 16 0 0 1 0-32" stroke-dasharray="0,100" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center flex-col">
+                <span id="caloriesRemain" class="text-xs sm:text-sm font-bold text-text leading-none tabular">—</span>
+                <span class="text-[9px] text-muted uppercase">Left</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-xl sm:text-2xl font-bold text-text tabular"><span id="caloriesConsumed">—</span></div>
+              <div class="text-xs text-muted mb-3">of <span id="caloriesTarget">—</span> kcal</div>
+              <button id="quickMeal"
+                class="btn btn-primary text-[11px] px-3 py-1.5">
+                + Log Meal
+              </button>
             </div>
           </div>
         </div>
-        <!-- Fat -->
-        <div>
-          <div class="flex justify-between text-xs mb-1">
-            <span class="font-medium text-amber-600 dark:text-amber-400">Fat</span>
-            <span class="text-gray-600 dark:text-gray-400"><span id="fatG">0</span> / <span id="fatT">0</span>g</span>
+
+        <!-- Macronutrients -->
+        <div class="card p-4 sm:p-6 flex flex-col justify-center">
+          <p class="label-tiny mb-3">Macronutrients</p>
+          <div class="space-y-3 sm:space-y-4">
+            <div>
+              <div class="flex justify-between text-xs mb-1.5">
+                <span class="font-medium text-success">Protein</span>
+                <span class="text-muted tabular"><span id="proG">0</span> / <span id="proT">0</span>g</span>
+              </div>
+              <div class="macro-track">
+                <div id="proBar" class="macro-fill bg-success" style="width:0%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs mb-1.5">
+                <span class="font-medium text-warn">Carbs</span>
+                <span class="text-muted tabular"><span id="carbG">0</span> / <span id="carbT">0</span>g</span>
+              </div>
+              <div class="macro-track">
+                <div id="carbBar" class="macro-fill bg-warn" style="width:0%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs mb-1.5">
+                <span class="font-medium text-rose">Fat</span>
+                <span class="text-muted tabular"><span id="fatG">0</span> / <span id="fatT">0</span>g</span>
+              </div>
+              <div class="macro-track">
+                <div id="fatBar" class="macro-fill bg-rose" style="width:0%"></div>
+              </div>
+            </div>
           </div>
-          <div class="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div id="fatBar" class="h-full bg-amber-500 rounded-full transition-all duration-700" style="width:0%">
+        </div>
+
+        <!-- Macro Adherence -->
+        <div class="card p-4 sm:p-6 flex flex-col justify-between min-h-[11rem] sm:min-h-0">
+          <div>
+            <p class="label-tiny mb-1">Macro adherence</p>
+            <p id="adherenceDietLabel" class="text-[10px] text-muted truncate" title=""></p>
+          </div>
+          <div class="flex items-baseline gap-1.5 my-2 sm:my-3">
+            <span id="adherenceAvgScore" class="text-3xl sm:text-4xl font-bold font-display leading-none text-muted tabular">—</span>
+            <span class="text-base sm:text-lg text-muted font-medium">/10</span>
+          </div>
+          <p id="adherenceAvgMeta" class="text-[11px] leading-snug text-muted">Day average vs your diet macro mix.</p>
+        </div>
+
+        <!-- Hydration -->
+        <div class="card p-4 sm:p-6 flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <p class="label-tiny">Hydration</p>
+            <span class="text-xs font-medium text-brand bg-brand-tint px-2 py-0.5 rounded-full tabular"><span id="hydrationMl">0</span> ml</span>
+          </div>
+          <div class="flex-1 flex items-center justify-between gap-1 mb-4" id="hydrationDrops">
+            <!-- Populated by JS -->
+          </div>
+          <button id="logWater"
+            class="w-full btn btn-primary py-2 text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2">
+            <i class="ph ph-drop-fill"></i>
+            <span>Add Water (250ml)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Content Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+
+        <!-- Meals (Left 2/3) -->
+        <div class="lg:col-span-2 space-y-4">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 id="mealsHeading" class="text-xl font-semibold text-text font-display">Today's Meals</h2>
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div id="mealsBulkBar" class="hidden items-center gap-2">
+                <label class="flex items-center gap-1.5 text-xs text-muted cursor-pointer select-none">
+                  <input type="checkbox" id="mealsSelectAll" class="rounded border-border">
+                  <span>Select all</span>
+                </label>
+                <button type="button" id="bulkDeleteMealsBtn" class="btn btn-ghost text-xs px-2.5 py-1.5 text-danger border border-danger/30" disabled>Delete selected</button>
+              </div>
+              <a href="/history" class="text-sm font-medium text-brand hover:text-brand-ink flex items-center gap-1">
+                <span class="hidden sm:inline">View History</span> <i class="ph ph-arrow-right"></i>
+              </a>
+            </div>
+          </div>
+
+          <div id="mealsList" class="space-y-3">
+            <!-- Populated by JS -->
+            <div class="card p-8 text-center">
+              <p class="text-muted">Loading your meals...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Insights (Right 1/3) -->
+        <div class="lg:col-span-1">
+          <h2 class="text-xl font-semibold text-text font-display mb-4">AI Insights</h2>
+          <div class="card p-6 relative overflow-hidden">
+            <div id="insights" class="space-y-4 relative z-10 text-sm text-muted">
+              <div class="flex items-start gap-3">
+                <i class="ph ph-sparkle text-warn mt-1"></i>
+                <p>Analysis in progress... Eat a few meals to get personalized patterns!</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Macro adherence (3rd; matches per-meal badges) -->
-    <div class="metric-card glass-panel rounded-2xl p-4 sm:p-6 flex flex-col justify-between min-h-[11rem] sm:min-h-0">
-      <div>
-        <h3 class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Macro adherence</h3>
-        <p id="adherenceDietLabel" class="text-[10px] text-gray-400 dark:text-gray-500 truncate" title=""></p>
-      </div>
-      <div class="flex items-baseline gap-1.5 my-2 sm:my-3">
-        <span id="adherenceAvgScore" class="text-3xl sm:text-4xl font-bold font-serif-accent leading-none text-gray-400 dark:text-gray-500">—</span>
-        <span class="text-base sm:text-lg text-gray-400 dark:text-gray-500 font-medium">/10</span>
-      </div>
-      <p id="adherenceAvgMeta" class="text-[11px] leading-snug text-gray-500 dark:text-gray-400">Day average vs your diet macro mix.</p>
-    </div>
-
-    <!-- Hydration (Glass Card) -->
-    <div class="metric-card glass-panel rounded-2xl p-4 sm:p-6 flex flex-col">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Hydration</h3>
-        <span class="text-xs font-medium text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full"><span
-            id="hydrationMl">0</span> ml</span>
-      </div>
-
-      <div class="flex-1 flex items-center justify-between gap-1 mb-4" id="hydrationDrops">
-        <!-- Populated by JS -->
-      </div>
-
-      <button id="logWater"
-        class="w-full btn-primary py-2 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2">
-        <i class="ph ph-drop-fill text-blue-400"></i>
-        <span>Add Water (250ml)</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Main Content Grid -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
-
-    <!-- Timeline (Left 2/3) -->
-    <div class="lg:col-span-2 space-y-6">
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h2 id="mealsHeading" class="text-xl font-bold text-gray-900 dark:text-white font-serif-accent">Today's Meals</h2>
-        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-          <div id="mealsBulkBar" class="hidden items-center gap-2">
-            <label class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 cursor-pointer select-none">
-              <input type="checkbox" id="mealsSelectAll" class="rounded border-gray-300 dark:border-gray-600">
-              <span>Select all</span>
-            </label>
-            <button type="button" id="bulkDeleteMealsBtn" class="btn-secondary px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/60" disabled>Delete selected</button>
-          </div>
-          <a href="/history" class="text-sm font-medium text-purple-600 hover:text-purple-700 flex items-center gap-1">
-            <span class="hidden sm:inline">View History</span> <i class="ph ph-arrow-right"></i>
-          </a>
-        </div>
-      </div>
-
-      <div id="mealsList" class="space-y-4">
-        <!-- Populated by JS -->
-        <div class="glass-panel p-8 text-center rounded-2xl">
-          <p class="text-gray-500">Loading your meals...</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Insights (Right 1/3) -->
-    <div class="lg:col-span-1">
-      <h2 class="text-xl font-bold text-gray-900 dark:text-white font-serif-accent mb-6">AI Insights</h2>
-      <div class="glass-panel rounded-2xl p-6 relative overflow-hidden">
-        <div class="hidden sm:block absolute -top-10 -right-10 w-32 h-32 bg-yellow-200/20 dark:bg-yellow-500/10 rounded-full blur-2xl">
-        </div>
-
-        <div id="insights" class="space-y-4 relative z-10 text-sm text-gray-600 dark:text-gray-300">
-          <div class="flex items-start gap-3">
-            <i class="ph ph-sparkle text-yellow-500 mt-1"></i>
-            <p>Analysis in progress... Eat a few meals to get personalized patterns!</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
+    </div><!-- end main content -->
+  </div><!-- end flex row -->
 </div>
 
 <!-- Log Meal Modal -->
 <div id="logMealModal" class="fixed inset-0 z-[200] hidden items-center justify-center">
   <div id="logMealBackdrop" class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
-  <div class="relative w-full max-w-md mx-4 glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl">
-    <button id="closeLogMealModal" class="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+  <div class="modal relative w-full max-w-md mx-4">
+    <button id="closeLogMealModal" class="absolute top-4 right-4 btn btn-ghost btn-icon">
       <i class="ph ph-x text-lg"></i>
     </button>
     <div class="mb-5">
-      <h2 id="logMealModalTitle" class="text-xl font-bold font-serif-accent text-gray-900 dark:text-white">Log a Meal</h2>
-      <p id="logMealModalSubtitle" class="text-sm text-gray-500 mt-1">Describe what you ate and we'll calculate the nutrition.</p>
+      <h2 id="logMealModalTitle" class="text-xl font-semibold font-display text-text">Log a Meal</h2>
+      <p id="logMealModalSubtitle" class="text-sm text-muted mt-1">Describe what you ate and we'll calculate the nutrition.</p>
     </div>
     <div class="space-y-4">
       <div>
         <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500">Meal Description</label>
+          <label class="label-tiny">Meal Description</label>
           <button type="button" id="logMealFromPlanToggle"
-            class="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 inline-flex items-center gap-1 rounded-lg px-2 py-1 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+            class="text-xs font-semibold text-brand hover:text-brand-ink inline-flex items-center gap-1 rounded-lg px-2 py-1 hover:bg-brand-tint transition">
             <i class="ph ph-calendar-check"></i>
             <span>From saved week plan</span>
           </button>
         </div>
-        <div id="logMealPlanPicker" class="hidden mb-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/40 p-3 space-y-2">
-          <p id="logMealPlanPickerStatus" class="text-xs text-gray-500 dark:text-gray-400"></p>
+        <div id="logMealPlanPicker" class="hidden mb-3 rounded-xl border border-border bg-surface p-3 space-y-2">
+          <p id="logMealPlanPickerStatus" class="text-xs text-muted"></p>
           <div id="logMealPlanPickerSlots" class="flex flex-col gap-1.5"></div>
         </div>
         <textarea id="logMealText" rows="3" placeholder="e.g. Grilled chicken breast with rice and broccoli, about 400g total"
-          class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-800/60 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none placeholder-gray-400"></textarea>
+          class="input resize-none placeholder:text-subtle"></textarea>
       </div>
       <div>
-        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Meal Type</label>
-        <select id="logMealType" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-800/60 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+        <label class="label-tiny mb-1.5 block">Meal Type</label>
+        <select id="logMealType" class="input">
           <option value="unspecified">Unspecified</option>
           <option value="breakfast">Breakfast</option>
           <option value="lunch">Lunch</option>
@@ -243,8 +265,8 @@
           <option value="snack">Snack</option>
         </select>
       </div>
-      <div id="logMealError" class="hidden text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg"></div>
-      <button id="logMealSubmit" class="w-full btn-primary py-3 rounded-xl text-sm font-bold uppercase tracking-wide flex items-center justify-center gap-2">
+      <div id="logMealError" class="hidden text-sm text-danger bg-danger/10 px-3 py-2 rounded-xl"></div>
+      <button id="logMealSubmit" class="w-full btn btn-primary py-3 flex items-center justify-center gap-2">
         <i class="ph ph-check-circle text-lg"></i>
         <span>Log Meal</span>
       </button>
@@ -334,10 +356,10 @@
         const isToday = key === localToday;
         const base = 'h-8 w-8 rounded-lg text-xs font-medium transition-colors';
         const state = isSelected
-          ? 'bg-purple-600 text-white'
+          ? 'bg-brand text-white'
           : isToday
-            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-            : 'hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300';
+            ? 'bg-brand-tint text-brand-ink dark:text-brand'
+            : 'hover:bg-surface2 text-text';
 
         if (isFuture) {
           cells.push(`<button class="${base} opacity-40 cursor-not-allowed" disabled>${day}</button>`);
@@ -396,10 +418,10 @@
     }
 
     function adherenceScoreColorClass(score) {
-      if (score == null || Number.isNaN(score)) return 'text-gray-400 dark:text-gray-500';
-      if (score >= 8) return 'text-purple-600 dark:text-purple-400';
-      if (score >= 5) return 'text-amber-600 dark:text-amber-400';
-      return 'text-red-600 dark:text-red-400';
+      if (score == null || Number.isNaN(score)) return 'text-muted';
+      if (score >= 8) return 'text-brand';
+      if (score >= 5) return 'text-warn';
+      return 'text-danger';
     }
 
     function renderMeals(data) {
@@ -417,12 +439,12 @@
       if (!data.meals || data.meals.length === 0) {
         window.__dashboardMealsCache = [];
         mealsEl.innerHTML = `
-          <div class="glass-panel p-8 text-center rounded-2xl border-dashed border-2 border-gray-200 dark:border-gray-700">
-             <div class="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-3 text-purple-600">
+          <div class="card p-8 text-center border-2 border-dashed border-border">
+             <div class="w-12 h-12 bg-brand-tint rounded-full flex items-center justify-center mx-auto mb-3 text-brand-ink dark:text-brand">
                   <i class="ph ph-calendar-blank text-xl"></i>
              </div>
-             <p class="text-gray-500 mb-4">No meals logged for ${data.is_today ? 'today' : prettyDate(data.selected_date)}.</p>
-             <button onclick="openLogMealModal()" class="btn-primary px-5 py-2 rounded-xl text-sm">Log Meal</button>
+             <p class="text-muted mb-4">No meals logged for ${data.is_today ? 'today' : prettyDate(data.selected_date)}.</p>
+             <button onclick="openLogMealModal()" class="btn btn-primary px-5 py-2">Log Meal</button>
           </div>
         `;
         return;
@@ -451,7 +473,7 @@
         const sourceKind = m.source_kind || (sj.source === 'v3' ? 'v3' : 'legacy');
         const mid = escapeHtmlAttr(m.id);
 
-        let imgHtml = '<div class="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs text-gray-400"><i class="ph ph-image"></i></div>';
+        let imgHtml = '<div class="w-full h-full bg-surface2 flex items-center justify-center text-xs text-muted"><i class="ph ph-image"></i></div>';
         if (m.image_base64) {
           imgHtml = `<img src="data:image/jpeg;base64,${m.image_base64}" loading="lazy" decoding="async" class="w-full h-full object-cover">`;
         } else if (m.image_path) {
@@ -463,31 +485,31 @@
 
         let scoreBadge = '';
         if (score !== null) {
-          const color = score >= 8 ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : score >= 5 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
-          scoreBadge = `<span class="px-2 py-1 rounded-md text-xs font-bold ${color}">${score}/10</span>`;
+          const color = score >= 8 ? 'pill-success' : score >= 5 ? 'pill-warn' : 'pill-danger';
+          scoreBadge = `<span class="pill ${color}">${score}/10</span>`;
         }
 
         const editBtn = sourceKind === 'v3'
-          ? `<button type="button" class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-purple-600 dark:hover:text-purple-400" data-meal-edit data-meal-id="${mid}" title="Edit meal" aria-label="Edit meal"><i class="ph ph-pencil-simple text-lg"></i></button>`
+          ? `<button type="button" class="btn btn-ghost btn-icon" data-meal-edit data-meal-id="${mid}" title="Edit meal" aria-label="Edit meal"><i class="ph ph-pencil-simple text-lg"></i></button>`
           : '';
 
         return `
-          <div class="glass-panel rounded-xl p-2.5 sm:p-3 flex items-center gap-2 sm:gap-4 sm:hover:shadow-md transition-all">
-            <input type="checkbox" class="meal-select-check rounded border-gray-300 dark:border-gray-600 flex-shrink-0 self-center" data-meal-id="${mid}" data-meal-source-kind="${escapeHtmlAttr(sourceKind)}" title="Select for bulk delete" aria-label="Select meal">
-            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0">${imgHtml}</div>
+          <div class="card p-2.5 sm:p-3 flex items-center gap-2 sm:gap-4 hover:shadow-md transition-all">
+            <input type="checkbox" class="meal-select-check rounded border-border flex-shrink-0 self-center" data-meal-id="${mid}" data-meal-source-kind="${escapeHtmlAttr(sourceKind)}" title="Select for bulk delete" aria-label="Select meal">
+            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-surface2 flex-shrink-0">${imgHtml}</div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between gap-2 mb-1">
-                <h4 class="font-bold text-gray-900 dark:text-gray-100 truncate">${name}</h4>
-                <span class="text-xs text-gray-500 flex-shrink-0">${timeStr}</span>
+                <h4 class="font-semibold text-text truncate">${name}</h4>
+                <span class="text-xs text-muted flex-shrink-0">${timeStr}</span>
               </div>
-              <div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400 flex-wrap">
+              <div class="flex items-center gap-2 sm:gap-3 text-xs text-muted flex-wrap">
                 <span class="flex items-center gap-1"><i class="ph ph-fire"></i> ${cal} kcal</span>
                 ${scoreBadge}
               </div>
             </div>
             <div class="flex flex-col gap-0.5 flex-shrink-0 self-center">
               ${editBtn}
-              <button type="button" class="p-1.5 rounded-lg text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600" data-meal-delete data-meal-source-kind="${escapeHtmlAttr(sourceKind)}" data-meal-id="${mid}" title="Remove meal" aria-label="Delete meal"><i class="ph ph-trash text-lg"></i></button>
+              <button type="button" class="btn btn-ghost btn-icon text-muted hover:text-danger" data-meal-delete data-meal-source-kind="${escapeHtmlAttr(sourceKind)}" data-meal-id="${mid}" title="Remove meal" aria-label="Delete meal"><i class="ph ph-trash text-lg"></i></button>
             </div>
           </div>
         `;
@@ -540,11 +562,11 @@
       const pct = target > 0 ? Math.min(100, Math.round((consumed / target) * 100)) : 0;
       const path = document.getElementById('calProgressPath');
       path.setAttribute('stroke-dasharray', `${pct}, 100`);
-      path.classList.remove('text-red-500');
-      path.classList.add('text-purple-500');
+      path.classList.remove('text-danger');
+      path.classList.add('text-brand');
       if (consumed > target) {
-        path.classList.remove('text-purple-500');
-        path.classList.add('text-red-500');
+        path.classList.remove('text-brand');
+        path.classList.add('text-danger');
       }
 
       const t = data.targets.macros_g || {};
@@ -559,7 +581,7 @@
       for (let i = 0; i < 8; i++) {
         const active = i < glasses;
         const el = document.createElement('div');
-        el.className = `flex-1 h-8 rounded-lg flex items-center justify-center transition-all ${active ? 'bg-blue-500 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-300'}`;
+        el.className = `flex-1 h-8 rounded-lg flex items-center justify-center transition-all ${active ? 'bg-brand text-white shadow-sm' : 'bg-surface2 text-muted'}`;
         el.innerHTML = '<i class="ph ph-drop-fill"></i>';
         hContainer.appendChild(el);
       }
@@ -580,7 +602,7 @@
       const avg = data.adherence_avg;
       if (avg == null) {
         scoreEl.textContent = '—';
-        scoreEl.className = 'text-3xl sm:text-4xl font-bold font-serif-accent leading-none text-gray-400 dark:text-gray-500';
+        scoreEl.className = 'text-3xl sm:text-4xl font-bold font-display leading-none text-muted tabular';
         if (!mealsForAdherence.length) {
           metaEl.textContent = 'Log meals with macros to see a day average.';
         } else if (!scoredCount) {
@@ -590,7 +612,7 @@
         }
       } else {
         scoreEl.textContent = String(avg);
-        scoreEl.className = `text-3xl sm:text-4xl font-bold font-serif-accent leading-none ${adherenceScoreColorClass(Number(avg))}`;
+        scoreEl.className = `text-3xl sm:text-4xl font-bold font-display leading-none tabular ${adherenceScoreColorClass(Number(avg))}`;
         metaEl.textContent =
           scoredCount === mealsForAdherence.length
             ? `Average of ${scoredCount} meal${scoredCount === 1 ? '' : 's'} (same metric as badges below).`
@@ -600,13 +622,13 @@
       if (data.is_today) {
         logWaterBtn.dataset.locked = '0';
         logWaterBtn.setAttribute('aria-disabled', 'false');
-        logWaterBtn.className = 'w-full btn-primary py-2 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2';
-        logWaterBtn.innerHTML = '<i class="ph ph-drop-fill text-blue-400"></i><span>Add Water (250ml)</span>';
+        logWaterBtn.className = 'w-full btn btn-primary py-2 text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2';
+        logWaterBtn.innerHTML = '<i class="ph ph-drop-fill"></i><span>Add Water (250ml)</span>';
       } else {
         logWaterBtn.dataset.locked = '1';
         logWaterBtn.setAttribute('aria-disabled', 'true');
-        logWaterBtn.className = 'w-full btn-secondary py-2 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2';
-        logWaterBtn.innerHTML = '<i class="ph ph-lock-key text-amber-500"></i><span>Viewing past date (read-only)</span>';
+        logWaterBtn.className = 'w-full btn btn-secondary py-2 text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2';
+        logWaterBtn.innerHTML = '<i class="ph ph-lock-key text-warn"></i><span>Viewing past date (read-only)</span>';
       }
 
       renderMeals(data);
@@ -617,7 +639,7 @@
       if (!hasMeals) {
         container.innerHTML = `
           <div class="flex items-start gap-3">
-            <i class="ph ph-sparkle text-yellow-500 mt-1"></i>
+            <i class="ph ph-sparkle text-warn mt-1"></i>
             <p>Log a meal on this date to unlock personalized insights.</p>
           </div>
         `;
@@ -631,7 +653,7 @@
           throw new Error('No insights');
         }
         container.innerHTML = idata.insights.map((txt, idx) => `
-          <div class="flex items-start gap-3 p-3 rounded-lg bg-white/40 dark:bg-white/5 border border-white/20 dark:border-white/10">
+          <div class="flex items-start gap-3 p-3 rounded-xl bg-surface2 border border-border">
             <span class="text-lg">${['💡', '🥦', '🔥'][idx % 3]}</span>
             <p class="text-xs leading-relaxed opacity-90">${txt}</p>
           </div>
@@ -639,7 +661,7 @@
       } catch (_) {
         container.innerHTML = `
           <div class="flex items-start gap-3">
-            <i class="ph ph-warning-circle text-amber-500 mt-1"></i>
+            <i class="ph ph-warning-circle text-warn mt-1"></i>
             <p>Insights are not available right now. Please try again.</p>
           </div>
         `;
@@ -667,9 +689,9 @@
           bb.classList.remove('flex');
         }
         document.getElementById('mealsList').innerHTML = `
-          <div class="glass-panel p-8 text-center rounded-2xl">
-             <p class="text-gray-500 mb-4">Sign in to track your meals.</p>
-             <a href="/" class="btn-primary px-4 py-2 rounded-lg text-sm">Go to Home</a>
+          <div class="card p-8 text-center">
+             <p class="text-muted mb-4">Sign in to track your meals.</p>
+             <a href="/" class="btn btn-primary px-4 py-2">Go to Home</a>
           </div>
         `;
       }
@@ -938,12 +960,12 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className =
-          'w-full text-left px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white/80 dark:bg-gray-900/40 text-sm hover:border-purple-400 dark:hover:border-purple-500 transition-colors';
+          'w-full text-left px-3 py-2 rounded-xl border border-border bg-surface text-sm hover:border-brand transition-colors';
         const title = document.createElement('span');
-        title.className = 'font-semibold text-gray-700 dark:text-gray-200';
+        title.className = 'font-semibold text-text';
         title.textContent = labels[slotKey];
         const sub = document.createElement('span');
-        sub.className = 'text-gray-600 dark:text-gray-400';
+        sub.className = 'text-muted';
         sub.textContent = ' — ' + name;
         btn.appendChild(title);
         btn.appendChild(sub);

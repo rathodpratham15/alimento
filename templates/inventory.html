@@ -1,59 +1,64 @@
 {% extends "base.html" %}
 {% block title %}Inventory | Alimento{% endblock %}
 {% block content %}
-<div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 space-y-5 sm:space-y-6">
-    <section class="glass-panel rounded-2xl p-4 sm:p-6">
+<div class="max-w-[1280px] mx-auto px-2 sm:px-4 lg:px-6 space-y-5 sm:space-y-6">
+
+    <!-- Header -->
+    <section class="card p-4 sm:p-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h1 class="text-2xl sm:text-3xl font-bold">Smart Inventory</h1>
-                <p class="text-sm text-gray-600 dark:text-gray-300">Track pantry, fridge, and freezer items with low-stock and expiring alerts.</p>
+                <h1 class="text-2xl sm:text-3xl font-semibold font-display">Smart Inventory</h1>
+                <p class="text-sm text-muted mt-1">Track pantry, fridge, and freezer items with low-stock and expiring alerts.</p>
             </div>
-            <div id="inventorySummary" class="text-xs sm:text-sm text-gray-600 dark:text-gray-300"></div>
+            <div id="inventorySummary" class="text-xs sm:text-sm text-muted"></div>
         </div>
     </section>
 
-    <section class="glass-panel rounded-2xl p-4 sm:p-6">
-        <h2 class="font-semibold mb-3">Add Item</h2>
+    <!-- Add Item -->
+    <section class="card p-4 sm:p-6">
+        <h2 class="font-semibold mb-3 text-text">Add Item</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <input id="invName" class="input-glass rounded-xl px-3 py-2" placeholder="Item name">
-            <select id="invLocation" class="selector-pill rounded-xl px-3 py-2">
+            <input id="invName" class="input" placeholder="Item name">
+            <select id="invLocation" class="input">
                 <option value="pantry">Pantry</option>
                 <option value="fridge">Fridge</option>
                 <option value="freezer">Freezer</option>
             </select>
-            <input id="invCategory" class="input-glass rounded-xl px-3 py-2" placeholder="Category (e.g. dairy)">
-            <input id="invExpiry" type="date" class="input-glass rounded-xl px-3 py-2">
-            <input id="invQty" type="number" step="0.1" class="input-glass rounded-xl px-3 py-2" placeholder="Quantity">
-            <input id="invUnit" class="input-glass rounded-xl px-3 py-2" placeholder="Unit (pcs, g, ml)">
-            <input id="invThreshold" type="number" step="0.1" class="input-glass rounded-xl px-3 py-2" placeholder="Low stock threshold">
-            <button id="addItemBtn" class="btn-primary rounded-xl px-4 py-2 font-semibold">Add</button>
+            <input id="invCategory" class="input" placeholder="Category (e.g. dairy)">
+            <input id="invExpiry" type="date" class="input">
+            <input id="invQty" type="number" step="0.1" class="input" placeholder="Quantity">
+            <input id="invUnit" class="input" placeholder="Unit (pcs, g, ml)">
+            <input id="invThreshold" type="number" step="0.1" class="input" placeholder="Low stock threshold">
+            <button id="addItemBtn" class="btn btn-primary font-semibold">Add</button>
         </div>
-        <p id="inventoryStatus" class="text-xs mt-2 text-gray-500"></p>
+        <p id="inventoryStatus" class="text-xs mt-2 text-muted"></p>
     </section>
 
-    <section class="glass-panel rounded-2xl p-4 sm:p-6">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
-            <h2 class="font-semibold">Inventory List</h2>
+    <!-- Inventory List -->
+    <section class="card p-4 sm:p-6">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <h2 class="font-semibold text-text">Inventory List</h2>
             <div class="flex flex-wrap items-center gap-2">
-                <label class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 cursor-pointer select-none">
-                    <input type="checkbox" id="invSelectAll" class="rounded border-gray-300 dark:border-gray-600">
+                <label class="flex items-center gap-1.5 text-xs text-muted cursor-pointer select-none">
+                    <input type="checkbox" id="invSelectAll" class="rounded border-border">
                     <span>Select all</span>
                 </label>
-                <button type="button" id="bulkDeleteInventoryBtn" class="btn-secondary rounded-xl px-3 py-1.5 text-xs font-semibold text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/60" disabled>Delete selected</button>
-                <button id="refreshInventoryBtn" class="btn-secondary rounded-xl px-3 py-1.5 text-sm">Refresh</button>
+                <button type="button" id="bulkDeleteInventoryBtn" class="btn btn-ghost text-xs px-3 py-1.5 text-danger border border-danger/30" disabled>Delete selected</button>
+                <button id="refreshInventoryBtn" class="btn btn-secondary text-sm px-3 py-1.5">Refresh</button>
             </div>
         </div>
         <div id="inventoryList" class="space-y-2"></div>
     </section>
 
-    <section class="glass-panel rounded-2xl p-4 sm:p-6">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-3">
+    <!-- AI Suggestions -->
+    <section class="card p-4 sm:p-6">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-4">
             <div class="min-w-0">
-                <h2 class="font-semibold">AI Meal Suggestions (from inventory)</h2>
-                <p id="suggestionsMeta" class="text-xs text-gray-500 dark:text-gray-400 mt-1 min-h-[1.25rem]"></p>
+                <h2 class="font-semibold text-text">AI Meal Suggestions (from inventory)</h2>
+                <p id="suggestionsMeta" class="text-xs text-muted mt-1 min-h-[1.25rem]"></p>
             </div>
             <div class="flex flex-wrap items-center gap-2 shrink-0">
-                <button type="button" id="suggestBtn" class="btn-primary rounded-xl px-3 py-1.5 text-sm">Generate</button>
+                <button type="button" id="suggestBtn" class="btn btn-primary text-sm px-3 py-1.5">Generate</button>
             </div>
         </div>
         <div id="suggestions" class="space-y-2 text-sm"></div>
@@ -63,34 +68,34 @@
 <script>
     function esc(s) { return String(s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
 
-    function statusClass(status) {
-        if (status === 'low_stock') return 'status-low-stock';
-        if (status === 'expiring') return 'status-expiring';
-        return 'status-success';
+    function statusBadgeClass(status) {
+        if (status === 'low_stock') return 'pill pill-warn';
+        if (status === 'expiring') return 'pill pill-danger';
+        return 'pill pill-success';
     }
 
     function setStatus(msg, ok) {
         const el = document.getElementById('inventoryStatus');
-        el.className = `text-xs mt-2 ${ok ? 'text-green-600' : 'text-red-600'}`;
+        el.className = `text-xs mt-2 ${ok ? 'text-success' : 'text-danger'}`;
         el.textContent = msg;
     }
 
     function row(item) {
         const expiry = item.expires_at ? new Date(item.expires_at).toLocaleDateString() : '-';
         const qty = `${Number(item.quantity || 0)} ${item.unit || ''}`.trim();
-        const badge = item.status === 'expiring' ? `Expiring (${item.days_to_expiry ?? '?' }d)` : (item.status === 'low_stock' ? 'Low stock' : 'OK');
+        const badge = item.status === 'expiring' ? `Expiring (${item.days_to_expiry ?? '?'}d)` : (item.status === 'low_stock' ? 'Low stock' : 'OK');
         return `
-            <div class="surface-solid rounded-xl p-3 flex items-start justify-between gap-3">
+            <div class="bg-surface2 rounded-xl p-3 flex items-start justify-between gap-3 border border-border">
                 <label class="flex items-start gap-2 min-w-0 cursor-pointer select-none">
-                    <input type="checkbox" class="inv-select mt-1 rounded border-gray-300 dark:border-gray-600 flex-shrink-0" data-inv-id="${esc(item._id)}" aria-label="Select ${esc(item.name)}">
+                    <input type="checkbox" class="inv-select mt-1 rounded border-border flex-shrink-0" data-inv-id="${esc(item._id)}" aria-label="Select ${esc(item.name)}">
                     <div class="min-w-0">
-                        <div class="font-semibold">${esc(item.name)}</div>
-                        <div class="text-xs text-gray-600 dark:text-gray-300">${esc(item.location)} | ${esc(item.category || 'uncategorized')} | Qty: ${esc(qty)} | Exp: ${esc(expiry)}</div>
+                        <div class="font-semibold text-text">${esc(item.name)}</div>
+                        <div class="text-xs text-muted">${esc(item.location)} | ${esc(item.category || 'uncategorized')} | Qty: ${esc(qty)} | Exp: ${esc(expiry)}</div>
                     </div>
                 </label>
                 <div class="flex items-center gap-2 flex-shrink-0">
-                    <span class="text-xs px-2 py-1 rounded-full border ${statusClass(item.status)}">${esc(badge)}</span>
-                    <button type="button" class="btn-mini btn-mini-danger" onclick="deleteItem('${esc(item._id)}')">Delete</button>
+                    <span class="${statusBadgeClass(item.status)}">${esc(badge)}</span>
+                    <button type="button" class="btn btn-ghost text-xs px-2 py-1 text-danger hover:bg-danger/10" onclick="deleteItem('${esc(item._id)}')">Delete</button>
                 </div>
             </div>`;
     }
@@ -102,7 +107,7 @@
             setStatus(data.message || data.error || 'Could not load inventory.', false);
             return;
         }
-        document.getElementById('inventoryList').innerHTML = (data.items || []).map(row).join('') || '<p class="text-sm text-gray-500">No inventory items yet.</p>';
+        document.getElementById('inventoryList').innerHTML = (data.items || []).map(row).join('') || '<p class="text-sm text-muted">No inventory items yet.</p>';
         const s = data.summary || {};
         document.getElementById('inventorySummary').textContent = `Items: ${s.count || 0} | Low stock: ${s.low_stock || 0} | Expiring: ${s.expiring || 0}`;
         syncInvBulkUI();
@@ -180,12 +185,12 @@
         const el = document.getElementById('suggestionsMeta');
         if (!msg) {
             el.textContent = '';
-            el.className = 'text-xs text-gray-500 dark:text-gray-400 mt-1 min-h-[1.25rem]';
+            el.className = 'text-xs text-muted mt-1 min-h-[1.25rem]';
             return;
         }
-        let cls = 'text-gray-600 dark:text-gray-300';
-        if (tone === 'ok') cls = 'text-green-600 dark:text-green-400';
-        if (tone === 'err') cls = 'text-red-600 dark:text-red-400';
+        let cls = 'text-muted';
+        if (tone === 'ok') cls = 'text-success';
+        if (tone === 'err') cls = 'text-danger';
         el.className = `text-xs mt-1 min-h-[1.25rem] ${cls}`;
         el.textContent = msg;
     }
@@ -194,13 +199,13 @@
         const container = document.getElementById('suggestions');
         const list = Array.isArray(meals) ? meals : [];
         container.innerHTML = list.map(m => `
-            <div class="surface-solid rounded-xl p-3">
-                <div class="font-semibold">${esc(m.name)}</div>
-                <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">${esc(m.why || '')}</p>
-                <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">Uses: ${esc((m.uses || []).join(', '))}</p>
-                <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">${esc(m.nutrition_note || '')}</p>
+            <div class="bg-surface2 rounded-xl p-3 border border-border">
+                <div class="font-semibold text-text">${esc(m.name)}</div>
+                <p class="text-xs text-muted mt-1">${esc(m.why || '')}</p>
+                <p class="text-xs text-muted mt-1">Uses: ${esc((m.uses || []).join(', '))}</p>
+                <p class="text-xs text-muted mt-1">${esc(m.nutrition_note || '')}</p>
             </div>
-        `).join('') || '<p class="text-sm text-gray-500">No suggestions to show.</p>';
+        `).join('') || '<p class="text-sm text-muted">No suggestions to show.</p>';
     }
 
     async function loadSavedSuggestions() {
@@ -230,11 +235,11 @@
         try {
             data = await res.json();
         } catch (e) {
-            container.innerHTML = `<p class="text-sm text-red-600">Could not read server response (${res.status}).</p>`;
+            container.innerHTML = `<p class="text-sm text-danger">Could not read server response (${res.status}).</p>`;
             return;
         }
         if (!data.success) {
-            container.innerHTML = `<p class="text-sm text-red-600">${esc(data.message || data.error || 'Could not generate suggestions.')}</p>`;
+            container.innerHTML = `<p class="text-sm text-danger">${esc(data.message || data.error || 'Could not generate suggestions.')}</p>`;
             return;
         }
         const meals = data.meals || [];

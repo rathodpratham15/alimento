@@ -40,38 +40,41 @@
 {% endblock %}
 
 {% block content %}
-<div class="coach-page max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 space-y-4 sm:space-y-6">
+<div class="coach-page max-w-[1280px] mx-auto px-2 sm:px-4 lg:px-6 space-y-4 sm:space-y-6">
+    <!-- Header -->
     <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
         <div>
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white font-serif-accent">AI Nutrition Coach</h1>
-            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">Personalized guidance from your profile, planner, progress, and meal logs.</p>
+            <h1 class="text-2xl sm:text-3xl font-semibold text-text font-display">AI Nutrition Coach</h1>
+            <p class="text-sm sm:text-base text-muted">Personalized guidance from your profile, planner, progress, and meal logs.</p>
         </div>
         <div id="coachContextChips" class="flex flex-wrap gap-2 text-xs"></div>
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-4 gap-4 sm:gap-6">
+        <!-- Sidebar -->
         <aside class="xl:col-span-1 space-y-3 xl:sticky xl:top-28 self-start">
-            <div class="glass-panel rounded-2xl p-4">
-                <h2 class="text-sm font-bold mb-2">Quick Prompts</h2>
+            <div class="card p-4">
+                <h2 class="text-sm font-bold mb-2 text-text">Quick Prompts</h2>
                 <div class="space-y-2">
-                    <button class="coach-prompt btn-secondary w-full text-left px-3 py-2.5 rounded-xl text-xs leading-relaxed" data-prompt="What should I eat next to stay within my calories today?">Stay within calories today</button>
-                    <button class="coach-prompt btn-secondary w-full text-left px-3 py-2.5 rounded-xl text-xs leading-relaxed" data-prompt="Use my weekly plan and suggest today’s best lunch option.">Use weekly plan for lunch</button>
-                    <button class="coach-prompt btn-secondary w-full text-left px-3 py-2.5 rounded-xl text-xs leading-relaxed" data-prompt="I want to lose fat but keep muscle. What should dinner look like?">Fat loss + muscle dinner</button>
-                    <button class="coach-prompt btn-secondary w-full text-left px-3 py-2.5 rounded-xl text-xs leading-relaxed" data-prompt="Analyze my recent meal pattern and tell me one thing to improve this week.">Improve this week</button>
+                    <button class="coach-prompt btn btn-secondary w-full text-left px-3 py-2.5 text-xs leading-relaxed" data-prompt="What should I eat next to stay within my calories today?">Stay within calories today</button>
+                    <button class="coach-prompt btn btn-secondary w-full text-left px-3 py-2.5 text-xs leading-relaxed" data-prompt="Use my weekly plan and suggest today's best lunch option.">Use weekly plan for lunch</button>
+                    <button class="coach-prompt btn btn-secondary w-full text-left px-3 py-2.5 text-xs leading-relaxed" data-prompt="I want to lose fat but keep muscle. What should dinner look like?">Fat loss + muscle dinner</button>
+                    <button class="coach-prompt btn btn-secondary w-full text-left px-3 py-2.5 text-xs leading-relaxed" data-prompt="Analyze my recent meal pattern and tell me one thing to improve this week.">Improve this week</button>
                 </div>
             </div>
-            <div class="glass-panel rounded-2xl p-4">
-                <h2 class="text-sm font-bold mb-2">Context Snapshot</h2>
-                <div id="coachSnapshot" class="text-xs text-gray-600 dark:text-gray-300 space-y-1"></div>
+            <div class="card p-4">
+                <h2 class="text-sm font-bold mb-2 text-text">Context Snapshot</h2>
+                <div id="coachSnapshot" class="text-xs text-muted space-y-1"></div>
             </div>
         </aside>
 
-        <div class="xl:col-span-3 glass-panel rounded-2xl overflow-hidden border border-white/30 dark:border-white/10">
-            <div id="coachMessages" class="h-[58vh] sm:h-[62vh] overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4 bg-white/20 dark:bg-black/10"></div>
-            <div class="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 bg-white/55 dark:bg-black/20 backdrop-blur-sm">
+        <!-- Chat Area -->
+        <div class="xl:col-span-3 card overflow-hidden border border-border">
+            <div id="coachMessages" class="h-[58vh] sm:h-[62vh] overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4 bg-surface/30"></div>
+            <div class="border-t border-border p-3 sm:p-4 bg-surface/80 backdrop-blur-sm">
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <input id="coachInput" type="text" class="input-glass flex-1 rounded-xl px-4 h-12 text-sm" placeholder="e.g. I have 600 calories left. What should I eat for dinner?" />
-                    <button id="coachMic" class="btn-secondary h-12 w-12 rounded-xl inline-flex items-center justify-center" type="button" aria-label="Start voice input" title="Voice input">
+                    <input id="coachInput" type="text" class="input flex-1 h-12" placeholder="e.g. I have 600 calories left. What should I eat for dinner?" />
+                    <button id="coachMic" class="btn btn-secondary h-12 w-12 inline-flex items-center justify-center" type="button" aria-label="Start voice input" title="Voice input">
                         <svg id="coachMicIcon" viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"></path>
                             <path d="M19 11a7 7 0 0 1-14 0"></path>
@@ -79,7 +82,7 @@
                             <path d="M8 21h8"></path>
                         </svg>
                     </button>
-                    <button id="sendCoach" class="btn-secondary h-12 w-12 rounded-xl inline-flex items-center justify-center opacity-70 cursor-not-allowed" type="button" aria-label="Send message" title="Send" disabled>
+                    <button id="sendCoach" class="btn btn-secondary h-12 w-12 inline-flex items-center justify-center opacity-70 cursor-not-allowed" type="button" aria-label="Send message" title="Send" disabled>
                         <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M22 2L11 13"></path>
                             <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
@@ -326,7 +329,7 @@
         const row = document.createElement('div');
         row.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
         row.innerHTML = `
-            <div class="coach-bubble ${isUser ? 'bg-blue-600 text-white rounded-2xl rounded-tr-none' : 'coach-bubble-assistant surface-solid rounded-2xl rounded-tl-none'} p-3 text-sm leading-relaxed shadow-sm">
+            <div class="coach-bubble ${isUser ? 'bubble-user' : 'coach-bubble-assistant bubble-ai'} p-3 text-sm leading-relaxed">
                 ${renderMessageContent(role, text)}
             </div>
         `;
@@ -344,18 +347,18 @@
         const c = data.context || {};
 
         chips.innerHTML = [
-            `<span class="chip-toggle chip-toggle-active">${escapeHtml(c.name || 'User')}</span>`,
-            `<span class="chip-toggle">${escapeHtml((c.diet_type || 'general').replaceAll('_', ' '))}</span>`,
-            `<span class="chip-toggle">Goal: ${escapeHtml((c.goal_type || 'maintain').replaceAll('_', ' '))}</span>`,
-            `<span class="chip-toggle">Today: ${Math.round(c.today_calories || 0)} kcal</span>`,
+            `<span class="pill pill-brand">${escapeHtml(c.name || 'User')}</span>`,
+            `<span class="pill pill-neutral">${escapeHtml((c.diet_type || 'general').replaceAll('_', ' '))}</span>`,
+            `<span class="pill pill-neutral">Goal: ${escapeHtml((c.goal_type || 'maintain').replaceAll('_', ' '))}</span>`,
+            `<span class="pill pill-neutral">Today: ${Math.round(c.today_calories || 0)} kcal</span>`,
         ].join('');
 
         snapshot.innerHTML = `
-            <p><strong>Target calories:</strong> ${Math.round(c.daily_calories || 0)} kcal</p>
-            <p><strong>Meals logged:</strong> ${c.today_meals_count ?? c.recent_meals_count ?? 0}</p>
-            <p><strong>Plan available:</strong> ${c.has_week_plan ? 'Yes' : 'No'}</p>
-            <p><strong>Weight delta:</strong> ${c.weight_delta_kg == null ? 'n/a' : `${c.weight_delta_kg} kg`}</p>
-            <p><strong>Budget/meal:</strong> ${c.budget_per_meal ? `$${Number(c.budget_per_meal).toFixed(2)}` : 'n/a'}</p>
+            <p><strong class="text-text">Target calories:</strong> ${Math.round(c.daily_calories || 0)} kcal</p>
+            <p><strong class="text-text">Meals logged:</strong> ${c.today_meals_count ?? c.recent_meals_count ?? 0}</p>
+            <p><strong class="text-text">Plan available:</strong> ${c.has_week_plan ? 'Yes' : 'No'}</p>
+            <p><strong class="text-text">Weight delta:</strong> ${c.weight_delta_kg == null ? 'n/a' : `${c.weight_delta_kg} kg`}</p>
+            <p><strong class="text-text">Budget/meal:</strong> ${c.budget_per_meal ? `$${Number(c.budget_per_meal).toFixed(2)}` : 'n/a'}</p>
         `;
     }
 
