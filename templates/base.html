@@ -12,11 +12,11 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Alimento — Nutrition guidance that adapts to you{% endblock %}</title>
+    <title>{% block title %}Alimento — Pantry to plate, powered by AI{% endblock %}</title>
 
     <!-- Meta -->
-    <meta name="description" content="AI-powered nutrition tracking. Log meals, plan your week, track macros, and get personalized coaching.">
-    <meta name="theme-color" content="#6E9B6C">
+    <meta name="description" content="Alimento tracks what you have, plans your week, logs meals with AI, and coaches you toward your goals — one kitchen workflow.">
+    <meta name="theme-color" content="#C45C3B">
 
     <!-- Dark mode init (before render to avoid flash) -->
     <script>
@@ -28,10 +28,10 @@
         })();
     </script>
 
-    <!-- Fonts: Geist + Playfair Display -->
+    <!-- Fonts: Geist + Fraunces -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Tailwind config — MUST load before CDN -->
     <script src="{{ url_for('static', filename='tw-config.js') }}"></script>
@@ -58,7 +58,7 @@
     <div id="guest-banner" class="w-full bg-warn/10 border-b border-warn/20">
         <div class="max-w-[1280px] mx-auto px-4 py-2 flex items-center gap-3 text-sm">
             <i class="ph ph-info text-warn text-[16px]"></i>
-            <span class="text-text/90"><span class="font-medium">Browsing as guest</span> — 3 free meal logs. Sign in with Google to unlock everything.</span>
+            <span class="text-text/90"><span class="font-medium">Guest mode</span> — try 3 meal logs free. Sign in to save history, inventory, and your weekly planner.</span>
             <button class="open-login-modal ml-auto pill pill-warn font-medium hover:opacity-80 transition cursor-pointer">Sign in</button>
             <button onclick="__alimentoDismissGuest()" class="text-muted hover:text-text transition" aria-label="Dismiss"><i class="ph ph-x text-[16px]"></i></button>
         </div>
@@ -74,10 +74,10 @@
 
             <!-- Logo -->
             <a href="{{ url_for('index') }}" class="flex items-center gap-2 px-3 py-1.5 rounded-2xl" aria-label="Alimento home">
-                <span class="w-8 h-8 rounded-2xl bg-brand text-white grid place-items-center flex-shrink-0">
-                    <i class="ph ph-leaf text-[18px]"></i>
+                <span class="w-8 h-8 rounded-2xl bg-brand text-white grid place-items-center flex-shrink-0 shadow-sm">
+                    <i class="ph ph-bowl-food text-[18px]"></i>
                 </span>
-                <span class="font-display italic text-[22px] text-brand-ink dark:text-brand leading-none">Alimento</span>
+                <span class="font-sans-tight text-[20px] font-bold text-brand-ink dark:text-brand leading-none tracking-tight">Alimento</span>
             </a>
 
             <!-- Desktop Nav Links -->
@@ -218,10 +218,10 @@
 
             <div class="text-center mb-8">
                 <div class="w-16 h-16 bg-brand-tint rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <i class="ph ph-leaf text-[32px] text-brand-ink dark:text-brand"></i>
+                    <i class="ph ph-bowl-food text-[32px] text-brand-ink dark:text-brand"></i>
                 </div>
-                <h2 class="text-2xl font-semibold font-display mb-2">Welcome Back</h2>
-                <p class="text-sm text-muted">Sign in to sync your history and preferences</p>
+                <h2 class="text-2xl font-semibold font-display mb-2">Sign in to Alimento</h2>
+                <p class="text-sm text-muted">Save meals, inventory, and weekly plans across devices</p>
             </div>
 
             <a id="loginWithGoogleLink" href="{{ url_for('auth.login') }}"
@@ -250,11 +250,11 @@
             <div class="md:col-span-2">
                 <div class="flex items-center gap-2">
                     <span class="w-9 h-9 rounded-2xl bg-brand text-white grid place-items-center flex-shrink-0">
-                        <i class="ph ph-leaf text-[20px]"></i>
+                        <i class="ph ph-bowl-food text-[20px]"></i>
                     </span>
-                    <span class="font-display italic text-2xl text-brand-ink dark:text-brand">Alimento</span>
+                    <span class="font-sans-tight text-xl font-bold text-brand-ink dark:text-brand tracking-tight">Alimento</span>
                 </div>
-                <p class="mt-4 text-sm text-muted max-w-sm">Nutrition guidance that adapts to you — log meals, plan ahead, and improve every day.</p>
+                <p class="mt-4 text-sm text-muted max-w-sm">One workflow from pantry to plate — inventory, planning, meal logs, and AI coaching built for real kitchens.</p>
             </div>
             <div>
                 <p class="label-tiny">Product</p>

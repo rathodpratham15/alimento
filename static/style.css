@@ -3,20 +3,21 @@
    ============================================================ */
 
 :root {
-  /* Light — warm off-white */
-  --bg: 250 247 241;            /* #FAF7F1 */
+  /* Light — warm linen */
+  --bg: 252 248 244;            /* #FCF8F4 */
   --surface: 255 255 255;       /* #FFFFFF */
-  --surface-2: 246 242 234;     /* #F6F2EA */
-  --border: 232 226 215;        /* #E8E2D7 */
-  --text: 31 27 22;             /* #1F1B16 */
-  --muted: 118 112 106;         /* #76706A */
-  --subtle: 168 161 152;        /* #A8A198 */
+  --surface-2: 247 241 234;     /* #F7F1EA */
+  --border: 230 220 208;        /* #E6DCD0 */
+  --text: 28 24 20;             /* #1C1814 */
+  --muted: 115 106 98;          /* #736A62 */
+  --subtle: 162 152 142;        /* #A2988E */
 
-  /* Sage green brand — warm, natural, food-appropriate */
-  --brand: 110 155 108;         /* #6E9B6C */
-  --brand-dark: 86 128 84;      /* #568054 */
-  --brand-tint: 232 240 229;    /* #E8F0E5 */
-  --brand-ink: 47 75 46;        /* #2F4B2E */
+  /* Terracotta brand — distinct from sage NutriAI palette */
+  --brand: 196 92 59;           /* #C45C3B */
+  --brand-dark: 158 68 42;      /* #9E442A */
+  --brand-tint: 255 235 225;    /* #FFEBE1 */
+  --brand-ink: 92 42 28;        /* #5C2A1C */
+  --accent: 217 145 33;         /* amber highlight */
 
   --success: 76 175 80;
   --warn: 217 145 33;
@@ -34,10 +35,11 @@
   --muted: 168 161 152;         /* #A8A198 */
   --subtle: 122 116 108;        /* #7A746C */
 
-  --brand: 143 184 141;         /* #8FB88D */
-  --brand-dark: 167 199 165;
-  --brand-tint: 31 42 30;       /* #1F2A1E */
-  --brand-ink: 220 232 218;
+  --brand: 224 140 112;         /* #E08C70 */
+  --brand-dark: 240 168 145;
+  --brand-tint: 48 28 22;       /* #301C16 */
+  --brand-ink: 255 232 220;
+  --accent: 232 174 73;
 
   --success: 134 200 138;
   --warn: 232 174 73;
@@ -56,7 +58,15 @@ body {
 }
 h1, h2, h3, h4 { line-height: 1.2; }
 
-.font-display { font-family: 'Playfair Display', Georgia, serif; }
+.font-display { font-family: 'Fraunces', Georgia, serif; font-optical-sizing: auto; }
+.font-sans-tight { font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.02em; }
+
+.hero-accent {
+  background: linear-gradient(120deg, rgb(var(--brand)) 0%, rgb(var(--accent)) 55%, rgb(var(--brand-dark)) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 
 .tabular { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
 
@@ -71,15 +81,23 @@ h1, h2, h3, h4 { line-height: 1.2; }
 /* Brand radial glow (hero backgrounds) */
 .brand-glow {
   background-image:
-    radial-gradient(ellipse 60% 50% at 20% 20%, rgb(var(--brand-tint) / 0.9), transparent 60%),
-    radial-gradient(ellipse 50% 40% at 80% 30%, rgba(255, 220, 180, 0.55), transparent 60%),
-    radial-gradient(ellipse 60% 50% at 50% 90%, rgb(var(--brand-tint) / 0.7), transparent 60%);
+    radial-gradient(ellipse 55% 45% at 15% 15%, rgb(var(--brand-tint) / 0.95), transparent 58%),
+    radial-gradient(ellipse 45% 40% at 85% 25%, rgba(255, 200, 140, 0.45), transparent 55%),
+    radial-gradient(ellipse 55% 50% at 50% 95%, rgb(var(--brand) / 0.08), transparent 60%);
 }
 .dark .brand-glow {
   background-image:
-    radial-gradient(ellipse 60% 50% at 20% 20%, rgb(var(--brand-tint) / 0.55), transparent 60%),
-    radial-gradient(ellipse 50% 40% at 80% 30%, rgba(80, 55, 35, 0.4), transparent 60%),
-    radial-gradient(ellipse 60% 50% at 50% 90%, rgb(var(--brand-tint) / 0.45), transparent 60%);
+    radial-gradient(ellipse 55% 45% at 15% 15%, rgb(var(--brand) / 0.12), transparent 58%),
+    radial-gradient(ellipse 45% 40% at 85% 25%, rgba(196, 92, 59, 0.15), transparent 55%),
+    radial-gradient(ellipse 55% 50% at 50% 95%, rgb(var(--brand-tint) / 0.5), transparent 60%);
+}
+
+.fork-strip {
+  border: 1px solid rgb(var(--border));
+  background: linear-gradient(135deg, rgb(var(--surface)) 0%, rgb(var(--brand-tint) / 0.35) 100%);
+}
+.dark .fork-strip {
+  background: linear-gradient(135deg, rgb(var(--surface)) 0%, rgb(var(--brand-tint) / 0.65) 100%);
 }
 
 /* Cards */

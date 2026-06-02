@@ -151,7 +151,7 @@ Access at: http://localhost:5001
 
 * Tailwind CSS
 * Phosphor Icons
-* Geist + Playfair Display
+* Geist + Fraunces (terracotta brand palette)
 * Vanilla JavaScript
 * Responsive Design
 
